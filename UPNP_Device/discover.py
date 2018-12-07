@@ -284,7 +284,7 @@ else:
         yield [None, '127.0.0.1']
 
 
-def discover(timeout=5, log_level=None):
+def discover(timeout=5, log_level=None, search_ip=None):
     logger = logging.getLogger('UPNP_Devices')
     logger.setLevel(logging.NOTSET)
     if log_level is not None:
@@ -317,7 +317,6 @@ def discover(timeout=5, log_level=None):
         logger.debug('SSDP: %s\n%s', ip_address, req)
         for _ in range(5):
             sock.sendto(req, (ip_address, 1900))
-
 
     def do(gateway_address, local_address):
         sock = socket.socket(
@@ -360,15 +359,15 @@ def discover(timeout=5, log_level=None):
 
         threads.remove(threading.current_thread())
 
-    for sock_addr in get_local_addresses():
-        t = threading.Thread(
-            target=do,
-            args=sock_addr
-        )
-        t.daemon = True
-        threads += [t]
-        t.start()
-
+    if search_ip is None:
+        for sock_addr in get_local_addresses():
+            t = threading.Thread(
+                target=do,
+                args=sock_addr
+            )
+            t.daemon = True
+            threads += [t]
+            t.start()
 
     found_classes = []
 
@@ -432,20 +431,25 @@ def discover(timeout=5, log_level=None):
 
         threads.remove(threading.current_thread())
 
+    if search_ip is not None:
+        t = threading.Thread(target=found_thread, args=(search_ip,))
+        t.daemon = True
+        threads += [t]
+        t.start()
+
     while threads:
         found_event.wait()
         found_event.clear()
-        while found:
-            found_addr = found.pop(0)
-            t = threading.Thread(target=found_thread, args=(found_addr,))
-            t.daemon = True
-            threads += [t]
-            t.start()
+        if search_ip is None:
+            while found:
+                found_addr = found.pop(0)
+                t = threading.Thread(target=found_thread, args=(found_addr,))
+                t.daemon = True
+                threads += [t]
+                t.start()
 
         while found_classes:
             yield found_classes.pop(0)
-
-
 
 
 if __name__ == '__main__':

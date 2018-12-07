@@ -365,5 +365,5 @@ by simply printing that object
 This package is Python 2.7+ compatible
 It does require the six package as well as the requests package.
 
-  
+
 
