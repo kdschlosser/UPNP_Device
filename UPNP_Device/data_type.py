@@ -1,17 +1,21 @@
+# -*- coding: utf-8 -*-
 
 import sys
 import base64
 import uuid
-from .xmlns import service_xmlns
 
 PY3 = sys.version_info[0] >= 3
+
+
+if PY3:
+    unicode = bytes
 
 
 class StateVariable(object):
     def __init__(self, node):
         self.node = node
-        self.name = node.find(service_xmlns('name')).text
-        data_type = node.find(service_xmlns('dataType')).text
+        self.name = node.find('name').text
+        data_type = node.find('dataType').text
 
         data_type_classes = {
             'time.tz': TimeTZ,
@@ -53,12 +57,12 @@ class UUID(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -156,11 +160,11 @@ class Fixed144(object):
         self.maximum = None
         self.step = None
 
-        allowed_range = node.find(service_xmlns('allowedValueRange'))
+        allowed_range = node.find('allowedValueRange')
         if allowed_range is not None:
-            minimum = allowed_range.find(service_xmlns('minimum'))
-            maximum = allowed_range.find(service_xmlns('maximum'))
-            step = allowed_range.find(service_xmlns('step'))
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
 
             if minimum is not None and minimum.text and minimum.text.isdigit():
                 self.minimum = int(minimum.text)
@@ -169,7 +173,7 @@ class Fixed144(object):
             if step is not None and step.text and step.text.isdigit():
                 self.step = int(step.text)
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -272,12 +276,12 @@ class BinBase64(object):
     def __init__(self, node, direction):
         self.direction = direction
 
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -376,12 +380,12 @@ class BinHex(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -476,12 +480,12 @@ class Char(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -581,11 +585,11 @@ class Float(object):
         self.maximum = None
         self.step = None
 
-        allowed_range = node.find(service_xmlns('allowedValueRange'))
+        allowed_range = node.find('allowedValueRange')
         if allowed_range is not None:
-            minimum = allowed_range.find(service_xmlns('minimum'))
-            maximum = allowed_range.find(service_xmlns('maximum'))
-            step = allowed_range.find(service_xmlns('step'))
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
 
             if minimum is not None and minimum.text and minimum.text.isdigit():
                 self.minimum = int(minimum.text)
@@ -594,7 +598,7 @@ class Float(object):
             if step is not None and step.text and step.text.isdigit():
                 self.step = int(step.text)
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -609,10 +613,6 @@ class Float(object):
             upnp_data_type=self.__name__,
             py_data_type='float'
         )
-
-
-        output = indent + 'Data Type Name: ' + self.__name__ + '\n'
-        output += indent + 'Data Type: float\n'
 
         if self.default_value == 'NOT_IMPLEMENTED':
             return output + indent + 'NOT_IMPLEMENTED' + '\n'
@@ -685,11 +685,11 @@ class R8(object):
         self.maximum = None
         self.step = None
 
-        allowed_range = node.find(service_xmlns('allowedValueRange'))
+        allowed_range = node.find('allowedValueRange')
         if allowed_range is not None:
-            minimum = allowed_range.find(service_xmlns('minimum'))
-            maximum = allowed_range.find(service_xmlns('maximum'))
-            step = allowed_range.find(service_xmlns('step'))
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
 
             if minimum is not None and minimum.text and minimum.text.isdigit():
                 self.minimum = int(minimum.text)
@@ -698,7 +698,7 @@ class R8(object):
             if step is not None and step.text and step.text.isdigit():
                 self.step = int(step.text)
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -807,11 +807,11 @@ class R4(object):
         self.maximum = None
         self.step = None
 
-        allowed_range = node.find(service_xmlns('allowedValueRange'))
+        allowed_range = node.find('allowedValueRange')
         if allowed_range is not None:
-            minimum = allowed_range.find(service_xmlns('minimum'))
-            maximum = allowed_range.find(service_xmlns('maximum'))
-            step = allowed_range.find(service_xmlns('step'))
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
 
             if minimum is not None and minimum.text and minimum.text.isdigit():
                 self.minimum = int(minimum.text)
@@ -820,7 +820,7 @@ class R4(object):
             if step is not None and step.text and step.text.isdigit():
                 self.step = int(step.text)
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -914,11 +914,11 @@ class SignedUnsignedBase(object):
         self.maximum = None
         self.step = None
 
-        allowed_range = node.find(service_xmlns('allowedValueRange'))
+        allowed_range = node.find('allowedValueRange')
         if allowed_range is not None:
-            minimum = allowed_range.find(service_xmlns('minimum'))
-            maximum = allowed_range.find(service_xmlns('maximum'))
-            step = allowed_range.find(service_xmlns('step'))
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
 
             if minimum is not None and minimum.text and minimum.text.isdigit():
                 self.minimum = int(minimum.text)
@@ -927,7 +927,7 @@ class SignedUnsignedBase(object):
             if step is not None and step.text and step.text.isdigit():
                 self.step = int(step.text)
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -943,7 +943,6 @@ class SignedUnsignedBase(object):
             upnp_data_type=self.__name__,
             py_data_type=self._label + ' int'
         )
-
 
         if self.default_value == 'NOT_IMPLEMENTED':
             return output + indent + 'NOT_IMPLEMENTED' + '\n'
@@ -1067,11 +1066,11 @@ class Int(object):
         self.maximum = None
         self.step = None
 
-        allowed_range = node.find(service_xmlns('allowedValueRange'))
+        allowed_range = node.find('allowedValueRange')
         if allowed_range is not None:
-            minimum = allowed_range.find(service_xmlns('minimum'))
-            maximum = allowed_range.find(service_xmlns('maximum'))
-            step = allowed_range.find(service_xmlns('step'))
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
 
             if minimum is not None and minimum.text and minimum.text.isdigit():
                 self.minimum = int(minimum.text)
@@ -1080,7 +1079,7 @@ class Int(object):
             if step is not None and step.text and step.text.isdigit():
                 self.step = int(step.text)
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1163,12 +1162,12 @@ class String(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1267,12 +1266,12 @@ class TimeTZ(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1367,12 +1366,12 @@ class Time(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1467,12 +1466,12 @@ class DateTimeTZ(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1567,12 +1566,12 @@ class DateTime(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1667,12 +1666,12 @@ class Date(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed_values = node.find(service_xmlns('allowedValueList'))
+        allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
             allowed_values = list(value.text for value in allowed_values)
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
@@ -1767,7 +1766,7 @@ class Boolean(object):
 
     def __init__(self, node, direction):
         self.direction = direction
-        allowed = node.find(service_xmlns('allowedValueList'))
+        allowed = node.find('allowedValueList')
 
         if allowed is None:
             allowed_values = ['0', '1']
@@ -1786,7 +1785,7 @@ class Boolean(object):
 
         self.allowed_values = allowed_values
 
-        default_value = node.find(service_xmlns('defaultValue'))
+        default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 self.default_value = 'NOT_IMPLEMENTED'
@@ -1839,15 +1838,13 @@ class Boolean(object):
                 value = self.allowed_values[int(value)]
 
             if value not in self.allowed_values:
-                raise TypeError(
-                    'Incorrect data type expected type '
-                    '{0} got {1}'.format(self.data_type, type(value))
-                )
+                raise TypeError('Incorrect value')
 
         elif value is not None:
             value = bool(self.allowed_values.index(value))
 
         return value
+
 
 TEMPLATE = '''
 {indent}UPNP data type: {upnp_data_type}

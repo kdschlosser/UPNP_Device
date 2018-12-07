@@ -3,7 +3,6 @@
 from __future__ import print_function
 import socket
 import threading
-import time
 import logging
 import sys
 import ctypes

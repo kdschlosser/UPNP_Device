@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
+
 import requests
-from .xmlns import DEVICE_XMLNS
 
 
 class Icon(object):
@@ -13,7 +14,7 @@ class Icon(object):
         self.url = None
 
         for item in node:
-            tag = item.tag.replace(DEVICE_XMLNS, '')
+            tag = item.tag
             try:
                 text = int(item.text)
             except ValueError:
@@ -31,13 +32,14 @@ class Icon(object):
     def data(self):
         return requests.get(self.url).content
 
-    def _get_parent_name(self):
-        return self.__parent._get_parent_name() + '.' + self.__name__
+    @property
+    def access_point(self):
+        return self.__parent.access_point + '.' + self.__name__
 
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            access_point=self._get_parent_name(),
+            access_point=self.access_point,
             name=self.__name__,
             mime_type=self.mime_type,
             width=self.width,

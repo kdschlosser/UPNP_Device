@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
 
 import requests
-from .xmlns import service_xmlns
+from xml.dom.minidom import Document
+from lxml import etree
+from .xmlns import ENVELOPE_XMLNS, strip_xmlns
 
 
 class Action(object):
@@ -12,16 +15,14 @@ class Action(object):
         self.service = service
         self.control_url = control_url
 
-        self.__name__ = node.find(service_xmlns('name')).text
+        self.__name__ = node.find('name').text
 
         for arguments in node:
-            if arguments.tag != service_xmlns('argumentList'):
+            if arguments.tag != 'argumentList':
                 continue
             for argument in arguments:
-                direction = argument.find(service_xmlns('direction')).text
-                variable = argument.find(
-                    service_xmlns('relatedStateVariable')
-                ).text
+                direction = argument.find('direction').text
+                variable = argument.find('relatedStateVariable').text
                 variable = state_variables[variable](direction)
 
                 if direction == 'in':
@@ -85,16 +86,16 @@ class Action(object):
             headers=header
         )
 
-        envelope = ElementTree.fromstring(response.content)
-        body = envelope.find(envelope_xmlns('Body'))
+        envelope = etree.fromstring(response.content)
+        envelope = strip_xmlns(envelope)
+
+        body = envelope.find('Body')
 
         return_value = []
 
         if body is not None:
 
-            response = body.find(
-                response_xmlns(self.service, self.__name__ + 'Response')
-            )
+            response = body.find(self.__name__ + 'Response')
             if response is not None:
                 for ret_val in self.ret_vals:
                     value = response.find(ret_val.__name__)
@@ -111,8 +112,9 @@ class Action(object):
 
         return return_value
 
-    def _get_parent_name(self):
-        return self.__parent._get_parent_name() + '.' + self.__name__
+    @property
+    def access_point(self):
+        return self.__parent.access_point + '.' + self.__name__
 
     def __str__(self, indent=''):
         if self.params:
@@ -121,7 +123,7 @@ class Action(object):
             for param in self.params:
                 params += param.__str__(indent + '    ') + '\n'
         else:
-            params  = 'None\n\n'
+            params = 'None\n\n'
 
         if self.ret_vals:
             ret_vals = ''
@@ -135,7 +137,7 @@ class Action(object):
         output = TEMPLATE.format(
             indent=indent,
             name=self.__name__,
-            access_point=self._get_parent_name(),
+            access_point=self.access_point,
             params=params,
             ret_vals=ret_vals
         )
