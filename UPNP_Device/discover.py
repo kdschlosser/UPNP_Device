@@ -284,7 +284,7 @@ else:
         yield [None, '127.0.0.1']
 
 
-def discover(timeout=5, log_level=None, search_ip=None):
+def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
     logger = logging.getLogger('UPNP_Devices')
     logger.setLevel(logging.NOTSET)
     if log_level is not None:
@@ -359,7 +359,7 @@ def discover(timeout=5, log_level=None, search_ip=None):
 
         threads.remove(threading.current_thread())
 
-    if search_ip is None:
+    if search_ip == '0.0.0.0':
         for sock_addr in get_local_addresses():
             t = threading.Thread(
                 target=do,
@@ -431,7 +431,7 @@ def discover(timeout=5, log_level=None, search_ip=None):
 
         threads.remove(threading.current_thread())
 
-    if search_ip is not None:
+    if search_ip != '0.0.0.0':
         t = threading.Thread(target=found_thread, args=(search_ip,))
         t.daemon = True
         threads += [t]
@@ -440,7 +440,7 @@ def discover(timeout=5, log_level=None, search_ip=None):
     while threads:
         found_event.wait()
         found_event.clear()
-        if search_ip is None:
+        if search_ip == '0.0.0.0':
             while found:
                 found_addr = found.pop(0)
                 t = threading.Thread(target=found_thread, args=(found_addr,))
