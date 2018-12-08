@@ -3,17 +3,16 @@
 import six
 import requests
 from lxml import etree
-from .xmlns import strip_xmlns
-from .service import Service
-from .embedded_device import EmbeddedDevice
-from .instance_singleton import InstanceSingleton
+from xmlns import strip_xmlns
+from service import Service
+from embedded_device import EmbeddedDevice
+from instance_singleton import InstanceSingleton
 
 
 @six.add_metaclass(InstanceSingleton)
 class UPNPObject(object):
 
     def __init__(self, ip, classes):
-
         self.ip_address = ip
         url_template = b'http://'
         cls_name = None
@@ -24,6 +23,7 @@ class UPNPObject(object):
             url = url_template + (
                 location.replace(b'http://', b'').split(b'/')[0]
             )
+            url = url_template + url
             location = location.replace(url, b'')
 
             response = requests.get(url + location)
@@ -40,15 +40,13 @@ class UPNPObject(object):
                 control_url = service.find('controlURL').text
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
-                if location is None:
-                    scpdurl = scpdurl.encode('utf-8')
-                else:
-                    scpdurl = (
-                        b'/' +
-                        location[1:].split(b'/')[0] +
-                        b'/' +
-                        scpdurl.encode('utf-8')
-                    )
+
+                scpdurl = (
+                    b'/' +
+                    location[1:].split(b'/')[0] +
+                    b'/' +
+                    scpdurl.encode('utf-8')
+                )
 
                 service = Service(
                     self,

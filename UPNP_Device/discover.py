@@ -1,22 +1,36 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import socket
 import threading
 import logging
 import sys
 import ctypes
 
-MCAST_GRP = "239.255.255.250"
+IPV4_MCAST_GRP = "239.255.255.250"
+IPV6_MCAST_GRP = "[ff02::c]"
 
-REQUEST = [
-    b'M-SEARCH * HTTP/1.1\r\n',
-    b'HOST: 239.255.255.250:1900\r\n',
-    b'MAN: "ssdp:discover"\r\n',
-    b'MX: 1\r\n',
-    b'ST: upnp:rootdevice\r\n',
-    b'CONTENT-LENGTH: 0\r\n\r\n'
-]
+
+IPV4_SSDP = '''
+M-SEARCH * HTTP/1.1\r
+ST: upnp:rootdevice\r
+MAN: "ssdp:discover"\r
+HOST: 239.255.255.250:1900\r
+MX: 1\r
+Content-Length: 0\r
+\r
+'''
+
+
+IPV6_SSDP = '''
+M-SEARCH * HTTP/1.1\r
+ST: upnp:rootdevice\r
+MAN: "ssdp:discover"\r
+HOST: [ff02::c]:1900\r
+MX: 1\r
+Content-Length: 0\r
+\r
+'''
 
 
 if sys.platform.startswith('win'):
@@ -139,7 +153,6 @@ if sys.platform.startswith('win'):
                     address_list = address_list.Next
                     if not address_list:
                         break
-
         else:
             raise ctypes.WinError()
 
@@ -301,7 +314,7 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
     #           RemoteControlReceiver:1
     # CONTENT-LENGTH: 0
 
-    from .upnp_class import UPNPObject
+    from upnp_class import UPNPObject
 
     ips = []
     found = []
@@ -309,13 +322,9 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
     threads = []
 
     def send_to(sock, ip_address):
-        req = b''
-        for line in REQUEST:
-            req += line
-
-        logger.debug('SSDP: %s\n%s', ip_address, req)
+        logger.debug('SSDP: %s\n%s', ip_address, IPV4_SSDP)
         for _ in range(5):
-            sock.sendto(req, (ip_address, 1900))
+            sock.sendto(IPV4_SSDP.encode('utf-8'), (ip_address, 1900))
 
     def do(gateway_address, local_address):
         sock = socket.socket(
@@ -327,7 +336,7 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
         sock.bind((local_address, 0))
         sock.settimeout(5)
-        send_to(sock, "239.255.255.250")
+        send_to(sock, IPV4_MCAST_GRP)
         if gateway_address is not None:
             send_to(sock, gateway_address)
 
@@ -342,7 +351,7 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
                 continue
 
             if addr == gateway_address:
-                send_to(sock, "239.255.255.250")
+                send_to(sock, IPV4_MCAST_GRP)
 
             ips.append(addr)
             found.append(addr)
@@ -378,7 +387,6 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
         )
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
-        # sock.bind((local_address, 0))
         sock.settimeout(timeout)
 
         send_to(sock, ip)
@@ -452,21 +460,9 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
 
 
 if __name__ == '__main__':
-    import sys
-    import os
-
-    sys.path.insert(
-        0,
-        os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
-    )
-
-    if '--debug' in sys.argv:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logging.disable(logging.DEBUG)
-    # logging.disable(logging.WARNING)
-    # logging.disable(logging.INFO)
-    for f_device in discover(10):
-        print(f_device)
-        print(f_device.device_id)
-
+    import logging
+    from logging import NullHandler
+    logger = logging.getLogger('UPNP_Devices')
+    logger.addHandler(NullHandler())
+    for device in discover(3, logging.DEBUG, '192.168.1.203'):
+        print(device)

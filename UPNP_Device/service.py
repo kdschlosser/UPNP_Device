@@ -2,10 +2,10 @@
 
 import requests
 from lxml import etree
-from .data_type import StateVariable
-from .action import Action
-from .icon import Icon
-from .xmlns import strip_xmlns
+from data_type import StateVariable
+from action import Action
+from icon import Icon
+from xmlns import strip_xmlns
 
 
 class Service(object):
@@ -99,7 +99,7 @@ class Service(object):
 
             output = TEMPLATE.format(
                 indent=indent,
-                access_point=self._get_parent_name(),
+                access_point=self.access_point,
                 service=self.service,
                 name=self.__name__,
                 actions=actions
@@ -150,24 +150,18 @@ class Service(object):
     def hardware_id(self):
         value = self.__get_xml_text('X_hardwareId')
         if value is not None:
-            value = value.text.replace('&amp;', '&')
+            value = value.replace('&amp;', '&')
 
         return value
 
     @property
     def device_category(self):
         value = self.__get_xml_text('X_deviceCategory')
-        if value is not None:
-            value = value.text
-
         return value
 
     @property
     def device_subcategory(self):
         value = self.__get_xml_text('X_deviceCategory')
-        if value is not None:
-            value = value.text
-
         return value
 
     @property

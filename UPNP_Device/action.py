@@ -3,7 +3,7 @@
 import requests
 from xml.dom.minidom import Document
 from lxml import etree
-from .xmlns import ENVELOPE_XMLNS, strip_xmlns
+from xmlns import ENVELOPE_XMLNS, strip_xmlns
 
 
 class Action(object):
