@@ -603,7 +603,7 @@ class Float(object):
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
             else:
-                default_value = int(default_value.text)
+                default_value = float(default_value.text)
 
         self.default_value = default_value
 

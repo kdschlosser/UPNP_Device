@@ -32,8 +32,13 @@ class UPNPObject(object):
 
             node = root.find('device')
 
-            services = node.find('serviceList') or []
-            devices = node.find('deviceList') or []
+            services = node.find('serviceList')
+            if services is None:
+                services = []
+
+            devices = node.find('deviceList')
+            if devices is None:
+                devices = []
 
             for service in services:
                 scpdurl = service.find('SCPDURL').text

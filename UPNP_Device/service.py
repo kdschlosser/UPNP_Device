@@ -28,7 +28,9 @@ class Service(object):
         self.__icons = {}
 
         if node is not None:
-            icons = node.find('iconList') or []
+            icons = node.find('iconList')
+            if icons is None:
+                icons = []
 
             for icon in icons:
                 icon = Icon(self, url, icon)
@@ -40,8 +42,13 @@ class Service(object):
 
         root = strip_xmlns(root)
 
-        actions = root.find('actionList') or []
-        state_variables = root.find('serviceStateTable') or []
+        actions = root.find('actionList')
+        if actions is None:
+            actions = []
+        state_variables = root.find('serviceStateTable')
+        if state_variables is None:
+            state_variables = []
+
         for state_variable in state_variables:
             state_variable = StateVariable(state_variable)
             self.state_variables[state_variable.name] = state_variable
