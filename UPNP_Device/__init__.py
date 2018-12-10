@@ -17,7 +17,7 @@ from .listen import listen # NOQA
 
 
 __title__ = "UPNP_Device"
-__version__ = "0.1.0b"
+__version__ = "0.1.1b"
 __url__ = "https://github.com/kdschlosser/UPNP_Device"
 __author__ = "Kevin Schlosser"
 __author_email__ = "kevin.g.schlosser@gmail.com"
