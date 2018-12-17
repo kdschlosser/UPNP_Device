@@ -11,8 +11,7 @@ setup(
     url=UPNP_Device.__url__,
     author=UPNP_Device.__author__,
     author_email=UPNP_Device.__author_email__,
-    license=UPNP_Device.__license__,
     long_description=open("README.md").read(),
     packages=["UPNP_Device"],
-    requires=['requests', 'lxml', 'six'],
+    requires=['requests', 'lxml', 'six', 'ifaddr'],
 )

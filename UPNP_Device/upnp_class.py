@@ -3,28 +3,27 @@
 import six
 import requests
 from lxml import etree
-from xmlns import strip_xmlns
-from service import Service
-from embedded_device import EmbeddedDevice
-from instance_singleton import InstanceSingleton
+from .xmlns import strip_xmlns
+from .service import Service
+from .embedded_device import EmbeddedDevice
+from .instance_singleton import InstanceSingleton
 
 
 @six.add_metaclass(InstanceSingleton)
 class UPNPObject(object):
 
-    def __init__(self, ip, classes):
+    def __init__(self, ip, locations):
         self.ip_address = ip
-        url_template = b'http://'
+        url_template = 'http://'
         cls_name = None
         self.__devices = {}
         self.__services = {}
 
-        for cls, location in classes.items():
+        for location in locations:
             url = url_template + (
-                location.replace(b'http://', b'').split(b'/')[0]
+                location.replace('http://', '').split('/')[0]
             )
-            url = url_template + url
-            location = location.replace(url, b'')
+            location = location.replace(url, '')
 
             response = requests.get(url + location)
             root = etree.fromstring(response.content)
@@ -41,17 +40,17 @@ class UPNPObject(object):
                 devices = []
 
             for service in services:
-                scpdurl = service.find('SCPDURL').text
-                control_url = service.find('controlURL').text
+                scpdurl = service.find('SCPDURL').text.replace(url, '')
+                control_url = service.find('controlURL').text.replace(url, '')
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
-
-                scpdurl = (
-                    b'/' +
-                    location[1:].split(b'/')[0] +
-                    b'/' +
-                    scpdurl.encode('utf-8')
-                )
+                if location is not None:
+                    scpdurl = (
+                        '/' +
+                        location[1:].split('/')[0] +
+                        '/' +
+                        scpdurl
+                    )
 
                 service = Service(
                     self,

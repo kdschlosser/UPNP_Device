@@ -24,7 +24,7 @@ class Icon(object):
                 name = text.split('/')[-1]
                 name = name.replace('.', '_')
                 self.__name__ = name
-                text = url + text.encode('utf-8')
+                text = url + text
 
             setattr(self, tag, text)
 

@@ -96,8 +96,6 @@ class UUID(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
 
         if value is None:
             if self.default_value is None:
@@ -148,7 +146,10 @@ class UUID(object):
                 )
 
         elif value is not None:
-            value = uuid.UUID(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = uuid.UUID(value)
 
         return value
 
@@ -166,19 +167,19 @@ class Fixed144(object):
             maximum = allowed_range.find('maximum')
             step = allowed_range.find('step')
 
-            if minimum is not None and minimum.text and minimum.text.isdigit():
-                self.minimum = int(minimum.text)
-            if maximum is not None and maximum.text and maximum.text.isdigit():
-                self.maximum = int(maximum.text)
-            if step is not None and step.text and step.text.isdigit():
-                self.step = int(step.text)
+            if minimum is not None and minimum.text:
+                self.minimum = float(minimum.text)
+            if maximum is not None and maximum.text:
+                self.maximum = float(maximum.text)
+            if step is not None and step.text:
+                self.step = float(step.text)
 
         default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
             else:
-                default_value = int(default_value.text)
+                default_value = float(default_value.text)
 
         self.default_value = default_value
 
@@ -207,10 +208,6 @@ class Fixed144(object):
         return output
 
     def __call__(self, value):
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -266,7 +263,10 @@ class Fixed144(object):
             value = '{0:14.4f}'.format(value)
 
         elif value is not None:
-            value = float(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = float(value)
 
         return value
 
@@ -322,9 +322,6 @@ class BinBase64(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -371,7 +368,10 @@ class BinBase64(object):
             value = base64.encodebytes(value)
 
         elif value is not None:
-            value = base64.decodebytes(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = base64.decodebytes(value)
 
         return value
 
@@ -419,9 +419,6 @@ class BinHex(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -472,6 +469,11 @@ class BinHex(object):
 
             if not value.startswith('0x'):
                 raise ValueError('Value is not hex')
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+
 
         return value
 
@@ -526,9 +528,6 @@ class Char(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -575,6 +574,10 @@ class Char(object):
             if len(value) != 1:
                 raise ValueError('Value is not a single character')
 
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+
         return value
 
 
@@ -591,12 +594,12 @@ class Float(object):
             maximum = allowed_range.find('maximum')
             step = allowed_range.find('step')
 
-            if minimum is not None and minimum.text and minimum.text.isdigit():
-                self.minimum = int(minimum.text)
-            if maximum is not None and maximum.text and maximum.text.isdigit():
-                self.maximum = int(maximum.text)
-            if step is not None and step.text and step.text.isdigit():
-                self.step = int(step.text)
+            if minimum is not None and minimum.text:
+                self.minimum = float(minimum.text)
+            if maximum is not None and maximum.text:
+                self.maximum = float(maximum.text)
+            if step is not None and step.text:
+                self.step = float(step.text)
 
         default_value = node.find('defaultValue')
         if default_value is not None:
@@ -632,10 +635,6 @@ class Float(object):
         return output
 
     def __call__(self, value):
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -673,7 +672,10 @@ class Float(object):
             value = str(value)
 
         elif value is not None:
-            value = float(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = float(value)
 
         return value
 
@@ -691,19 +693,19 @@ class R8(object):
             maximum = allowed_range.find('maximum')
             step = allowed_range.find('step')
 
-            if minimum is not None and minimum.text and minimum.text.isdigit():
-                self.minimum = int(minimum.text)
-            if maximum is not None and maximum.text and maximum.text.isdigit():
-                self.maximum = int(maximum.text)
-            if step is not None and step.text and step.text.isdigit():
-                self.step = int(step.text)
+            if minimum is not None and minimum.text:
+                self.minimum = float(minimum.text)
+            if maximum is not None and maximum.text:
+                self.maximum = float(maximum.text)
+            if step is not None and step.text:
+                self.step = float(step.text)
 
         default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
             else:
-                default_value = int(default_value.text)
+                default_value = float(default_value.text)
 
         self.default_value = default_value
 
@@ -732,10 +734,6 @@ class R8(object):
         return output
 
     def __call__(self, value):
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -791,7 +789,10 @@ class R8(object):
             value = str(value)
 
         elif value is not None:
-            value = float(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = float(value)
 
         return value
 
@@ -813,19 +814,19 @@ class R4(object):
             maximum = allowed_range.find('maximum')
             step = allowed_range.find('step')
 
-            if minimum is not None and minimum.text and minimum.text.isdigit():
-                self.minimum = int(minimum.text)
-            if maximum is not None and maximum.text and maximum.text.isdigit():
-                self.maximum = int(maximum.text)
-            if step is not None and step.text and step.text.isdigit():
-                self.step = int(step.text)
+            if minimum is not None and minimum.text:
+                self.minimum = float(minimum.text)
+            if maximum is not None and maximum.text:
+                self.maximum = float(maximum.text)
+            if step is not None and step.text:
+                self.step = float(step.text)
 
         default_value = node.find('defaultValue')
         if default_value is not None:
             if default_value.text == 'NOT_IMPLEMENTED':
                 default_value = 'NOT_IMPLEMENTED'
             else:
-                default_value = int(default_value.text)
+                default_value = float(default_value.text)
 
         self.default_value = default_value
 
@@ -854,10 +855,6 @@ class R4(object):
         return output
 
     def __call__(self, value):
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -898,7 +895,10 @@ class R4(object):
             value = str(value)
 
         elif value is not None:
-            value = float(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = float(value)
 
         return value
 
@@ -962,10 +962,6 @@ class SignedUnsignedBase(object):
         return output
 
     def __call__(self, value):
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1006,7 +1002,10 @@ class SignedUnsignedBase(object):
             value = str(value)
 
         elif value is not None:
-            value = int(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = int(value)
 
         return value
 
@@ -1115,9 +1114,6 @@ class Int(object):
 
     def __call__(self, value):
 
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1153,7 +1149,10 @@ class Int(object):
             value = str(value)
 
         elif value is not None:
-            value = int(value)
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = int(value)
 
         return value
 
@@ -1208,8 +1207,6 @@ class String(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
 
         if value is None:
             if self.default_value is None:
@@ -1254,6 +1251,10 @@ class String(object):
                         self.allowed_values
                     )
                 )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
 
         return value
 
@@ -1312,9 +1313,6 @@ class TimeTZ(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1358,6 +1356,10 @@ class TimeTZ(object):
                         self.allowed_values
                     )
                 )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
 
         return value
 
@@ -1412,9 +1414,6 @@ class Time(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1458,6 +1457,11 @@ class Time(object):
                         self.allowed_values
                     )
                 )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+
 
         return value
 
@@ -1512,9 +1516,6 @@ class DateTimeTZ(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1558,6 +1559,10 @@ class DateTimeTZ(object):
                         self.allowed_values
                     )
                 )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
 
         return value
 
@@ -1612,8 +1617,6 @@ class DateTime(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
 
         if value is None:
             if self.default_value is None:
@@ -1658,6 +1661,10 @@ class DateTime(object):
                         self.allowed_values
                     )
                 )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
 
         return value
 
@@ -1712,9 +1719,6 @@ class Date(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1758,6 +1762,10 @@ class Date(object):
                         self.allowed_values
                     )
                 )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
 
         return value
 
@@ -1819,9 +1827,6 @@ class Boolean(object):
         return output
 
     def __call__(self, value):
-        if self.default_value == 'NOT_IMPLEMENTED':
-            raise ValueError('Not Implemented')
-
         if value is None:
             if self.default_value is None:
                 if self.direction == 'in':
@@ -1841,7 +1846,10 @@ class Boolean(object):
                 raise TypeError('Incorrect value')
 
         elif value is not None:
-            value = bool(self.allowed_values.index(value))
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = bool(self.allowed_values.index(value))
 
         return value
 

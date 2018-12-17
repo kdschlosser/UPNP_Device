@@ -2,10 +2,10 @@
 
 import requests
 from lxml import etree
-from data_type import StateVariable
-from action import Action
-from icon import Icon
-from xmlns import strip_xmlns
+from .data_type import StateVariable
+from .action import Action
+from .icon import Icon
+from .xmlns import strip_xmlns
 
 
 class Service(object):
@@ -19,7 +19,6 @@ class Service(object):
         control_url,
         node=None
     ):
-
         self.__parent = parent
         self.state_variables = {}
         self.actions = {}
@@ -29,6 +28,7 @@ class Service(object):
 
         if node is not None:
             icons = node.find('iconList')
+
             if icons is None:
                 icons = []
 
@@ -37,14 +37,21 @@ class Service(object):
                 self.__icons[icon.__name__] = icon
 
         self.service = service
+
+        location = location.replace('//', '/')
+
         response = requests.get(url + location)
-        root = etree.fromstring(response.content)
+        try:
+            root = etree.fromstring(response.content)
+        except:
+            print 'ERROR:', '\n'.join('       ' + line for line in response.content.split('\n')).lstrip()
+            return
 
         root = strip_xmlns(root)
-
         actions = root.find('actionList')
         if actions is None:
             actions = []
+
         state_variables = root.find('serviceStateTable')
         if state_variables is None:
             state_variables = []
@@ -54,22 +61,14 @@ class Service(object):
             self.state_variables[state_variable.name] = state_variable
 
         for action in actions:
-            try:
-                action = Action(
-                    self,
-                    action,
-                    self.state_variables,
-                    service,
-                    url.decode('utf-8') + control_url
-                )
-            except AttributeError:
-                action = Action(
-                    self,
-                    action,
-                    self.state_variables,
-                    service,
-                    url + control_url
-                )
+            action = Action(
+                self,
+                action,
+                self.state_variables,
+                service,
+                url + control_url
+            )
+
             self.actions[action.__name__] = action
 
     @property
@@ -90,6 +89,10 @@ class Service(object):
             if item in self.__class__.__dict__:
                 if hasattr(self.__class__.__dict__[item], 'fget'):
                     return self.__class__.__dict__[item].fget(self)
+
+            value = self.__node.find(item)
+            if value is not None:
+                return value.text
 
         raise AttributeError(item)
 
@@ -183,7 +186,7 @@ class Service(object):
     def presentation_url(self):
         value = self.__get_xml_text('presentationURL')
         if value is not None:
-            return self.url + value.encode('utf-8')
+            return self.url + value
 
     @property
     def friendly_name(self):

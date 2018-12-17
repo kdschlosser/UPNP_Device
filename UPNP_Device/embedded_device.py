@@ -2,9 +2,9 @@
 
 import requests
 from lxml import etree
-from xmlns import strip_xmlns
-from icon import Icon
-from service import Service
+from .xmlns import strip_xmlns
+from .icon import Icon
+from .service import Service
 
 
 class EmbeddedDevice(object):
@@ -15,14 +15,20 @@ class EmbeddedDevice(object):
         self.__devices = {}
         self.__icons = {}
         if node is None:
-            response = requests.get(url + location)
+            response = requests.get(url + location.replace(url, ''))
             root = etree.fromstring(response.content)
             root = strip_xmlns(root)
             node = root.find('device')
 
-        icons = node.find('iconList') or []
-        services = node.find('serviceList') or []
-        devices = node.find('deviceList') or []
+        icons = node.find('iconList')
+        if icons is None:
+            icons = []
+        services = node.find('serviceList')
+        if services is None:
+            services = []
+        devices = node.find('deviceList')
+        if devices is None:
+            devices = []
 
         self.__node = node
 
@@ -31,18 +37,16 @@ class EmbeddedDevice(object):
             self.__icons[icon.__name__] = icon
 
         for service in services:
-            scpdurl = service.find('SCPDURL').text
-            control_url = service.find('controlURL').text
+            scpdurl = service.find('SCPDURL').text.replace(url, '')
+            control_url = service.find('controlURL').text.replace(url, '')
             service_id = service.find('serviceId').text
             service_type = service.find('serviceType').text
-            if location is None:
-                scpdurl = scpdurl.encode('utf-8')
-            else:
+            if location is not None:
                 scpdurl = (
-                    b'/' +
-                    location[1:].split(b'/')[0] +
-                    b'/' +
-                    scpdurl.encode('utf-8')
+                    '/' +
+                    location[1:].split('/')[0] +
+                    '/' +
+                    scpdurl
                 )
 
             service = Service(self, url, scpdurl, service_type, control_url)
@@ -182,7 +186,7 @@ class EmbeddedDevice(object):
     def presentation_url(self):
         value = self.__get_xml_text('presentationURL')
         if value is not None:
-            return self.url + value.encode('utf-8')
+            return self.url + value
 
     @property
     def friendly_name(self):
