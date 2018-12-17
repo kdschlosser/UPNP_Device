@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
+
 import socket
 import logging
 from errno import ENOPROTOOPT
 import time
 import threading
-from .discover import get_local_addresses
 from .upnp_class import UPNPObject
 
 SSDP_PORT = 1900

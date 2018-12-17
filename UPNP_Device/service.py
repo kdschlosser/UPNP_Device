@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
 
 import requests
-from xml.etree import cElementTree as ElementTree
-from .xmlns import service_xmlns, device_xmlns, pnpx_xmlns, df_xmlns
+from lxml import etree
 from .data_type import StateVariable
 from .action import Action
 from .icon import Icon
+from .xmlns import strip_xmlns
 
 
 class Service(object):
@@ -18,7 +19,6 @@ class Service(object):
         control_url,
         node=None
     ):
-
         self.__parent = parent
         self.state_variables = {}
         self.actions = {}
@@ -27,44 +27,53 @@ class Service(object):
         self.__icons = {}
 
         if node is not None:
-            icons = node.find(device_xmlns('iconList')) or []
+            icons = node.find('iconList')
+
+            if icons is None:
+                icons = []
 
             for icon in icons:
                 icon = Icon(self, url, icon)
                 self.__icons[icon.__name__] = icon
 
-
         self.service = service
-        response = requests.get(url + location)
-        root = ElementTree.fromstring(response.content)
 
-        actions = root.find(service_xmlns('actionList')) or []
-        state_variables = root.find(service_xmlns('serviceStateTable')) or []
+        location = location.replace('//', '/')
+
+        response = requests.get(url + location)
+        try:
+            root = etree.fromstring(response.content)
+        except:
+            print 'ERROR:', '\n'.join('       ' + line for line in response.content.split('\n')).lstrip()
+            return
+
+        root = strip_xmlns(root)
+        actions = root.find('actionList')
+        if actions is None:
+            actions = []
+
+        state_variables = root.find('serviceStateTable')
+        if state_variables is None:
+            state_variables = []
+
         for state_variable in state_variables:
             state_variable = StateVariable(state_variable)
             self.state_variables[state_variable.name] = state_variable
 
         for action in actions:
-            try:
-                action = Action(
-                    self,
-                    action,
-                    self.state_variables,
-                    service,
-                    url.decode('utf-8') + control_url
-                )
-            except AttributeError:
-                action = Action(
-                    self,
-                    action,
-                    self.state_variables,
-                    service,
-                    url + control_url
-                )
+            action = Action(
+                self,
+                action,
+                self.state_variables,
+                service,
+                url + control_url
+            )
+
             self.actions[action.__name__] = action
 
-    def _get_parent_name(self):
-        return self.__parent._get_parent_name() + '.' + self.__name__
+    @property
+    def access_point(self):
+        return self.__parent.access_point + '.' + self.__name__
 
     def __getattr__(self, item):
         if item in self.__dict__:
@@ -81,6 +90,10 @@ class Service(object):
                 if hasattr(self.__class__.__dict__[item], 'fget'):
                     return self.__class__.__dict__[item].fget(self)
 
+            value = self.__node.find(item)
+            if value is not None:
+                return value.text
+
         raise AttributeError(item)
 
     def __str__(self, indent=''):
@@ -96,7 +109,7 @@ class Service(object):
 
             output = TEMPLATE.format(
                 indent=indent,
-                access_point=self._get_parent_name(),
+                access_point=self.access_point,
                 service=self.service,
                 name=self.__name__,
                 actions=actions
@@ -128,7 +141,7 @@ class Service(object):
             udn=self.udn,
             upc=self.upc,
             icons=icons,
-            access_point=self._get_parent_name(),
+            access_point=self.access_point,
             service=self.service,
             name=self.__name__,
             actions=actions.rstrip() + '\n'
@@ -137,7 +150,7 @@ class Service(object):
         return output
 
     def __get_xml_text(self, tag):
-        value = self.__node.find(device_xmlns(tag))
+        value = self.__node.find(tag)
         if value is not None:
             value = value.text
 
@@ -145,26 +158,20 @@ class Service(object):
 
     @property
     def hardware_id(self):
-        value = self.__node.find(pnpx_xmlns('X_hardwareId'))
+        value = self.__get_xml_text('X_hardwareId')
         if value is not None:
-            value = value.text.replace('&amp;', '&')
+            value = value.replace('&amp;', '&')
 
         return value
 
     @property
     def device_category(self):
-        value = self.__node.find(pnpx_xmlns('X_deviceCategory'))
-        if value is not None:
-            value = value.text
-
+        value = self.__get_xml_text('X_deviceCategory')
         return value
 
     @property
     def device_subcategory(self):
-        value = self.__node.find(df_xmlns('X_deviceCategory'))
-        if value is not None:
-            value = value.text
-
+        value = self.__get_xml_text('X_deviceCategory')
         return value
 
     @property
@@ -179,7 +186,7 @@ class Service(object):
     def presentation_url(self):
         value = self.__get_xml_text('presentationURL')
         if value is not None:
-            return self.url + value.encode('utf-8')
+            return self.url + value
 
     @property
     def friendly_name(self):
