@@ -8,18 +8,17 @@ import ipaddress
 import sys
 
 import logging
-logger = logging.getLogger('UPNP_Devices')
 
+
+logger = logging.getLogger('UPNP_Devices')
 
 if sys.platform.startswith('win'):
     IPPROTO_IPV6 = 41
 else:
     IPPROTO_IPV6 = getattr(socket, 'IPPROTO_IPV6')
 
-
 IPV4_MCAST_GRP = "239.255.255.250"
 IPV6_MCAST_GRP = "[ff02::c]"
-
 
 IPV4_SSDP = '''M-SEARCH * HTTP/1.1\r
 ST: upnp:rootdevice\r
@@ -29,7 +28,6 @@ MX: 1\r
 Content-Length: 0\r
 \r
 '''
-
 
 IPV6_SSDP = '''M-SEARCH * HTTP/1.1\r
 ST: upnp:rootdevice\r
@@ -55,8 +53,7 @@ USN: uuid:75802409-bccb-40e7-8e6c-fa095ecce13e::urn:schemas-upnp-org:service:WAN
 '''
 
 
-def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
-
+def discover(timeout=5, log_level=None, search_ips=[]):
     if log_level is not None:
         logging.basicConfig(format="%(message)s", level=log_level)
         if log_level is not None:
@@ -158,8 +155,15 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
             sock.sendto(ssdp_packet.encode('utf-8'), (destination, 1900))
         return sock
 
-    def do(local_address, target_ip):
+    def do(local_address, target_ips):
         sock = send_to(local_address)
+
+        for target_ip in target_ips:
+            found[target_ip] = set()
+            t = threading.Thread(target=found_thread, args=(target_ip,))
+            t.daemon = True
+            threads.append(t)
+            t.start()
 
         while True:
             try:
@@ -167,7 +171,7 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
             except socket.timeout:
                 break
 
-            if target_ip is not None and target_ip != addr[0]:
+            if target_ips and addr[0] not in target_ips:
                 continue
 
             packet = convert_ssdp_response(data, addr[0])
@@ -209,7 +213,7 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
 
                 found[addr[0]].add(packet['LOCATION'])
 
-        except socket.timeout:
+        except socket.error:
             pass
 
         threads.remove(threading.current_thread())
@@ -217,13 +221,10 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
         if not threads:
             found_event.set()
 
-    if search_ip == '0.0.0.0':
-        search_ip = None
-
     for adapter_ip in adapter_ips:
         t = threading.Thread(
             target=do,
-            args=(adapter_ip, search_ip)
+            args=(adapter_ip, search_ips)
         )
         t.daemon = True
         threads += [t]
@@ -233,6 +234,9 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
 
     for ip, locations in found.items():
         locations = list(loc for loc in locations)
+        if not locations:
+            continue
+
         yield ip, locations
 
 
@@ -240,6 +244,7 @@ if __name__ == '__main__':
     from upnp_class import UPNPObject
 
     from logging import NullHandler
+
     logger.addHandler(NullHandler())
 
     for device_ip, locs in discover(5, logging.DEBUG):

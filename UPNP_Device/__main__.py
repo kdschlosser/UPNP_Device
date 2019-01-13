@@ -4,10 +4,12 @@ from __future__ import print_function
 import argparse
 import logging
 import UPNP_Device
+import threading
+import sys
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='UPNP_Deevice')
+    parser = argparse.ArgumentParser(prog='UPNP_Device')
     parser.add_argument(
         "-v",
         "--verbose",
@@ -36,18 +38,42 @@ def main():
     else:
         log_level = logging.DEBUG
 
-    if not args.ips:
-        for device in UPNP_Device.discover(args.timeeout, log_level):
-            print(device)
-    else:
-        for ip in args.ips:
-            devices = UPNP_Device.discover(args.timeeout, log_level, ip)
+    found_devices = []
+    event = threading.Event()
 
-            if devices:
-                device = devices[0]
-                print(device)
-            else:
-                logging.error('device at ip %s is not found', ip)
+    def do():
+        if log_level != logging.DEBUG:
+            sys.stdout.write('Finding UPNP Devices please wait..')
+        else:
+            print('Finding UPNP Devices please wait..')
+
+        event.set()
+
+        for device in UPNP_Device.discover(args.timeout, log_level, args.ips):
+            found_devices.append(device)
+        event.set()
+
+    t = threading.Thread(target=do)
+    t.daemon = True
+    t.start()
+
+    event.wait()
+    event.clear()
+    while not event.isSet():
+        if log_level != logging.DEBUG:
+            sys.stdout.write('.')
+        event.wait(1)
+    print()
+
+    for dvc in found_devices:
+        print(dvc)
+
+    for ip in args.ips:
+        for device in found_devices:
+            if device.ip_address == ip:
+                break
+        else:
+            logging.error('Unable to locate a device at IP ' + ip)
 
 
 if __name__ == "__main__":
