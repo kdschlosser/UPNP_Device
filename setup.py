@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from distutils.core import setup
+from setuptools import setup
 import UPNP_Device
 
 
@@ -13,5 +13,11 @@ setup(
     author_email=UPNP_Device.__author_email__,
     long_description=open("README.md").read(),
     packages=["UPNP_Device"],
-    requires=['requests', 'lxml', 'six', 'ifaddr'],
+    install_requires=['requests', 'lxml', 'six', 'ifaddr'],
+    entry_points={
+        "console_scripts": [
+            "UPNP_Device=UPNP_Device.__main__:main",
+            "upnp_device=UPNP_Device.__main__:main"
+        ]
+    },
 )
