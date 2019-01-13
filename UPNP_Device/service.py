@@ -49,11 +49,11 @@ class Service(object):
         try:
             root = etree.fromstring(response.content)
         except:
-            print(
-                'ERROR:',
-                '\n'.join('       ' + line
-                for line in response.content.split('\n')).lstrip()
-            )
+            import traceback
+
+            print(repr(response.content))
+
+            traceback.print_exc()
             return
 
         root = strip_xmlns(root)
