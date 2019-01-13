@@ -9,7 +9,6 @@ import sys
 
 import logging
 logger = logging.getLogger('UPNP_Devices')
-logger.setLevel(logging.NOTSET)
 
 
 if sys.platform.startswith('win'):
@@ -59,7 +58,9 @@ USN: uuid:75802409-bccb-40e7-8e6c-fa095ecce13e::urn:schemas-upnp-org:service:WAN
 def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
 
     if log_level is not None:
-        logger.setLevel(log_level)
+        logging.basicConfig(format="%(message)s", level=log_level)
+        if log_level is not None:
+            logger.setLevel(log_level)
 
     # Received 6/11/2018 at 9:38:51 AM (828)
     #
@@ -73,11 +74,9 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
     #           RemoteControlReceiver:1
     # CONTENT-LENGTH: 0
 
-    ips = []
-    found = []
+    found = {}
     found_event = threading.Event()
     threads = []
-
     adapter_ips = []
 
     for adapter in ifaddr.get_adapters():
@@ -87,6 +86,38 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
                 continue
             else:
                 adapter_ips += [adapter_ip.ip]
+
+    def convert_ssdp_response(packet, addr):
+        packet = packet.decode('utf-8').split('\n', 1)[1]
+
+        packet = dict(
+            (
+                line.split(':', 1)[0].strip().upper(),
+                line.split(':', 1)[1].strip()
+            ) for line in packet.split('\n') if line.strip()
+        )
+
+        if 'LOCATION' in packet:
+            logger.debug(
+                'SSDP: %s found LOCATION: %s',
+                addr,
+                packet['LOCATION']
+            )
+
+            if 'NT' in packet:
+                logger.debug(
+                    'SSDP: %s found NT: %s',
+                    addr,
+                    packet['NT']
+                )
+            if 'ST' in packet:
+                logger.debug(
+                    'SSDP: %s found ST: %s',
+                    addr,
+                    packet['ST']
+                )
+
+        return packet
 
     def send_to(destination, t_out=5):
         try:
@@ -127,51 +158,8 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
             sock.sendto(ssdp_packet.encode('utf-8'), (destination, 1900))
         return sock
 
-    def do(local_address):
+    def do(local_address, target_ip):
         sock = send_to(local_address)
-
-        while True:
-            try:
-                _, addr = sock.recvfrom(1024)
-            except socket.timeout:
-                break
-
-            addr = addr[0]
-            if addr in ips:
-                continue
-
-            logger.debug('SSDP: connected ip ' + addr)
-
-            ips.append(addr)
-            found.append(addr)
-            found_event.set()
-
-        try:
-            sock.close()
-        except socket.error:
-            pass
-
-        if len(threads) == 1:
-            found_event.set()
-
-        threads.remove(threading.current_thread())
-
-    if search_ip == '0.0.0.0':
-        for adapter_ip in adapter_ips:
-            t = threading.Thread(
-                target=do,
-                args=(adapter_ip,)
-            )
-            t.daemon = True
-            threads += [t]
-            t.start()
-
-    found_classes = []
-
-    def found_thread(ip):
-        sock = send_to(ip, timeout)
-
-        locations = []
 
         while True:
             try:
@@ -179,76 +167,80 @@ def discover(timeout=5, log_level=None, search_ip='0.0.0.0'):
             except socket.timeout:
                 break
 
-            addr = addr[0]
-            logger.debug('SSDP: %s - > %s', addr, data)
-            data = data.decode('utf-8').split('\n', 1)[1]
-
-            packet = dict(
-                (
-                    line.split(':', 1)[0].strip().upper(),
-                    line.split(':', 1)[1].strip()
-                ) for line in data.split('\n')
-                if line.strip()
-            )
-
-            if 'LOCATION' not in packet or packet['LOCATION'] in locations:
+            if target_ip is not None and target_ip != addr[0]:
                 continue
 
-            locations += [packet['LOCATION']]
-            logger.debug(
-                'SSDP: %s found LOCATION: %s',
-                addr,
-                packet['LOCATION']
-            )
+            packet = convert_ssdp_response(data, addr[0])
 
-            if 'NT' in packet:
-                logger.debug(
-                    'SSDP: %s found NT: %s',
-                    addr,
-                    packet['NT']
-                )
-            if 'ST' in packet:
-                logger.debug(
-                    'SSDP: %s found ST: %s',
-                    addr,
-                    packet['ST']
-                )
+            if 'LOCATION' not in packet:
+                continue
 
-        if locations:
-            logger.debug('SSDP: %s creating UPNPObject instance', addr)
+            if addr[0] not in found:
+                found[addr[0]] = set()
+                t = threading.Thread(target=found_thread, args=(addr[0],))
+                t.daemon = True
+                threads.append(t)
+                t.start()
 
-            found_classes.append([addr, locations])
-            found_event.set()
-
-        if len(threads) == 1:
-            found_event.set()
+            found[addr[0]].add(packet['LOCATION'])
+        try:
+            sock.close()
+        except socket.error:
+            pass
 
         threads.remove(threading.current_thread())
 
-    if search_ip != '0.0.0.0':
-        t = threading.Thread(target=found_thread, args=(search_ip,))
+        if not threads:
+            found_event.set()
+
+    def found_thread(ip):
+        sock = send_to(ip, timeout)
+
+        try:
+            while True:
+                data, addr = sock.recvfrom(1024)
+
+                packet = convert_ssdp_response(data, addr[0])
+
+                if 'LOCATION' not in packet:
+                    continue
+
+                logger.debug('SSDP: %s - > %s', addr[0], data)
+
+                found[addr[0]].add(packet['LOCATION'])
+
+        except socket.timeout:
+            pass
+
+        threads.remove(threading.current_thread())
+
+        if not threads:
+            found_event.set()
+
+    if search_ip == '0.0.0.0':
+        search_ip = None
+
+    for adapter_ip in adapter_ips:
+        t = threading.Thread(
+            target=do,
+            args=(adapter_ip, search_ip)
+        )
         t.daemon = True
         threads += [t]
         t.start()
 
-    while threads:
-        found_event.wait()
-        found_event.clear()
-        if search_ip == '0.0.0.0':
-            while found:
-                found_addr = found.pop(0)
-                t = threading.Thread(target=found_thread, args=(found_addr,))
-                t.daemon = True
-                threads += [t]
-                t.start()
+    found_event.wait()
 
-        while found_classes:
-            yield found_classes.pop(0)
+    for ip, locations in found.items():
+        locations = list(loc for loc in locations)
+        yield ip, locations
 
 
 if __name__ == '__main__':
-    from logging import NullHandler
+    from upnp_class import UPNPObject
 
+    from logging import NullHandler
     logger.addHandler(NullHandler())
-    for device in discover(5, logging.DEBUG):
-        print(device)
+
+    for device_ip, locs in discover(5, logging.DEBUG):
+        print(UPNPObject(device_ip, locs))

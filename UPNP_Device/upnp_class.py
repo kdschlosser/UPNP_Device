@@ -3,10 +3,16 @@
 import six
 import requests
 from lxml import etree
-from .xmlns import strip_xmlns
-from .service import Service
-from .embedded_device import EmbeddedDevice
-from .instance_singleton import InstanceSingleton
+try:
+    from .xmlns import strip_xmlns
+    from .service import Service
+    from .embedded_device import EmbeddedDevice
+    from .instance_singleton import InstanceSingleton
+except ImportError:
+    from xmlns import strip_xmlns
+    from service import Service
+    from embedded_device import EmbeddedDevice
+    from instance_singleton import InstanceSingleton
 
 
 @six.add_metaclass(InstanceSingleton)

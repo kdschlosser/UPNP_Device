@@ -2,9 +2,14 @@
 
 import requests
 from lxml import etree
-from .xmlns import strip_xmlns
-from .icon import Icon
-from .service import Service
+try:
+    from .xmlns import strip_xmlns
+    from .icon import Icon
+    from .service import Service
+except ImportError:
+    from xmlns import strip_xmlns
+    from icon import Icon
+    from service import Service
 
 
 class EmbeddedDevice(object):

@@ -9,8 +9,6 @@ logger = logging.getLogger('UPNP_Devices')
 logger.addHandler(NullHandler())
 logging.basicConfig(format="%(message)s", level=None)
 
-logger.setLevel(logging.NOTSET)
-
 
 from .discover import discover as _discover # NOQA
 from .listen import listen # NOQA
