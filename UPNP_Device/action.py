@@ -136,8 +136,8 @@ class Action(object):
             param_names = ''
 
         if self.ret_vals:
-            ret_val_names = 'dict(' + (
-                ', '.join(self.ret_val_names)) + ') = '
+            ret_val_names = (
+                ', '.join(self.ret_val_names)) + ' = '
             ret_vals = '\n'
 
             for i, val in enumerate(self.ret_vals):
@@ -159,6 +159,7 @@ class Action(object):
         )
 
         return output
+
 
 TEMPLATE = '''{indent}Method name: {name}
 {indent}Access point: {access_point}
