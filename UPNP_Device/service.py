@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import requests
+import os
 from lxml import etree
 try:
     from .data_type import StateVariable
@@ -13,6 +14,7 @@ except ImportError:
     from icon import Icon
     from xmlns import strip_xmlns
 
+
 class Service(object):
 
     def __init__(
@@ -22,7 +24,8 @@ class Service(object):
         location,
         service,
         control_url,
-        node=None
+        node=None,
+        dump=''
     ):
         self.__parent = parent
         self.state_variables = {}
@@ -44,8 +47,19 @@ class Service(object):
         self.service = service
 
         location = location.replace('//', '/')
-
         response = requests.get(url + location)
+        if dump:
+            loc = url + location
+            path = loc.replace('http://', '').split('/', 1)[-1]
+            path, file_name = path.rsplit('/', 1)
+            path = os.path.join(dump, path)
+
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+            with open(os.path.join(path, file_name), 'w') as f:
+                f.write(response.content)
+
         try:
             root = etree.fromstring(response.content)
         except:

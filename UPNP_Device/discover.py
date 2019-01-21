@@ -6,9 +6,10 @@ import threading
 import ifaddr
 import ipaddress
 import sys
+import os
 
 import logging
-
+import json
 
 logger = logging.getLogger('UPNP_Devices')
 
@@ -53,7 +54,7 @@ USN: uuid:75802409-bccb-40e7-8e6c-fa095ecce13e::urn:schemas-upnp-org:service:WAN
 '''
 
 
-def discover(timeout=5, log_level=None, search_ips=[]):
+def discover(timeout=5, log_level=None, search_ips=[], dump=''):
     if log_level is not None:
         logging.basicConfig(format="%(message)s", level=log_level)
         if log_level is not None:
@@ -95,6 +96,10 @@ def discover(timeout=5, log_level=None, search_ips=[]):
         )
 
         if 'LOCATION' in packet:
+            if dump:
+                with open(os.path.join(dump, 'SSDP.log'), 'a') as f:
+                    f.write(json.dumps(packet, indent=4) + '\n')
+
             logger.debug(
                 'SSDP: %s found LOCATION: %s',
                 addr,

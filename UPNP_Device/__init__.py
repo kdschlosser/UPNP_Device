@@ -15,9 +15,9 @@ from .listen import listen # NOQA
 from .upnp_class import UPNPObject # NOQA
 
 
-def discover(timeout=5, log_level=None, ips=[]):
-    for addr, locations in _discover(timeout, log_level, ips):
-        yield UPNPObject(addr, locations)
+def discover(timeout=5, log_level=None, ips=[], dump=''):
+    for addr, locations in _discover(timeout, log_level, ips, dump):
+        yield UPNPObject(addr, locations, dump)
 
 
 __title__ = "UPNP_Device"

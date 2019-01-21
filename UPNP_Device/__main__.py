@@ -17,6 +17,12 @@ def main():
         help="increase output verbosity"
     )
     parser.add_argument(
+        "--dump",
+        type=str,
+        default='',
+        help="dump output path"
+    )
+    parser.add_argument(
         "--timeout",
         type=int,
         default=5,
@@ -49,7 +55,7 @@ def main():
 
         event.set()
 
-        for device in UPNP_Device.discover(args.timeout, log_level, args.ips):
+        for device in UPNP_Device.discover(args.timeout, log_level, args.ips, args.dump):
             found_devices.append(device)
         event.set()
 

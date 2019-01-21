@@ -2,6 +2,7 @@
 
 import six
 import requests
+import os
 from lxml import etree
 try:
     from .xmlns import strip_xmlns
@@ -18,7 +19,7 @@ except ImportError:
 @six.add_metaclass(InstanceSingleton)
 class UPNPObject(object):
 
-    def __init__(self, ip, locations):
+    def __init__(self, ip, locations, dump=''):
         self.ip_address = ip
         url_template = 'http://'
         cls_name = None
@@ -29,9 +30,21 @@ class UPNPObject(object):
             url = url_template + (
                 location.replace('http://', '').split('/')[0]
             )
+            '"http://92.168.1.203:80"'
             location = location.replace(url, '')
-
             response = requests.get(url + location)
+
+            if dump:
+                loc = url + location
+                path = loc.replace('http://', '').split('/', 1)[-1]
+                path, file_name = path.rsplit('/', 1)
+                path = os.path.join(dump, path)
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+                with open(os.path.join(path, file_name), 'w') as f:
+                    f.write(response.content)
+
             root = etree.fromstring(response.content)
             root = strip_xmlns(root)
 
@@ -51,12 +64,9 @@ class UPNPObject(object):
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
                 if location is not None:
-                    scpdurl = (
-                        '/' +
-                        location[1:].split('/')[0] +
-                        '/' +
-                        scpdurl
-                    )
+                    pth = location[1:].split('/')[0]
+                    if pth not in scpdurl:
+                        scpdurl = ('/' + pth + '/' + scpdurl)
 
                 service = Service(
                     self,
@@ -64,14 +74,15 @@ class UPNPObject(object):
                     scpdurl,
                     service_type,
                     control_url,
-                    node
+                    node,
+                    dump
                 )
                 name = service_id.split(':')[-1]
                 service.__name__ = name
                 self.__services[name] = service
 
             for device in devices:
-                device = EmbeddedDevice(url, node=device, parent=self)
+                device = EmbeddedDevice(url, node=device, parent=self, dump=dump)
                 self.__devices[device.__name__] = device
 
             if cls_name is None:
