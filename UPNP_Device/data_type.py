@@ -54,11 +54,11 @@ class StateVariable(object):
 
 
 class UUID(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -173,10 +173,11 @@ class UUID(object):
 
 
 class Fixed144(object):
+    py_data_type = float
+
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -306,11 +307,11 @@ class Fixed144(object):
 
 
 class BinBase64(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
 
         allowed_values = node.find('allowedValueList')
@@ -436,11 +437,11 @@ class BinBase64(object):
 
 
 class BinHex(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -555,11 +556,11 @@ class BinHex(object):
 
 
 class Char(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -677,10 +678,11 @@ class Char(object):
 
 
 class Float(object):
+    py_data_type = float
+
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -792,10 +794,11 @@ class Float(object):
 
 
 class R8(object):
+    py_data_type = float
+
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -925,14 +928,15 @@ class R8(object):
 
 
 class Number(R8):
-    pass
+    py_data_type = float
 
 
 class R4(object):
+    py_data_type = float
+
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -1047,6 +1051,7 @@ class R4(object):
 
 
 class SignedUnsignedBase(object):
+    py_data_type = int
     _label = ''
     _min = 0
     _max = 0
@@ -1054,7 +1059,6 @@ class SignedUnsignedBase(object):
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = int
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -1170,58 +1174,67 @@ class SignedUnsignedBase(object):
 
 
 class I8(SignedUnsignedBase):
+    py_data_type = int
     _label = 'signed 64bit'
     _min = -9223372036854775808
     _max = 9223372036854775807
 
 
 class I4(SignedUnsignedBase):
+    py_data_type = int
     _label = 'signed 32bit'
     _min = -2147483648
     _max = 2147483647
 
 
 class I2(SignedUnsignedBase):
+    py_data_type = int
     _label = 'signed 16bit'
     _min = -32768
     _max = 32767
 
 
 class I1(SignedUnsignedBase):
+    py_data_type = int
     _label = 'signed 8bit'
     _min = -128
     _max = 127
 
 
 class UI8(SignedUnsignedBase):
+    py_data_type = int
     _label = 'unsigned 64bit'
     _min = 0
     _max = 18446744073709551615
 
 
 class UI4(SignedUnsignedBase):
+    py_data_type = int
     _label = 'unsigned 32bit'
     _min = 0
     _max = 4294967295
 
 
 class UI2(SignedUnsignedBase):
+    py_data_type = int
     _label = 'unsigned 16bit'
     _min = 0
     _max = 65535
 
 
 class UI1(SignedUnsignedBase):
+    py_data_type = int
     _label = 'unsigned 8bit'
     _min = 0
     _max = 255
 
 
 class Int(object):
+    py_data_type = int
+
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = int
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -1333,11 +1346,11 @@ class Int(object):
 
 
 class String(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1458,11 +1471,11 @@ class URI(String):
 
 
 class TimeTZ(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1578,11 +1591,11 @@ class TimeTZ(object):
 
 
 class Time(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1698,11 +1711,11 @@ class Time(object):
 
 
 class DateTimeTZ(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1818,11 +1831,11 @@ class DateTimeTZ(object):
 
 
 class DateTime(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1939,11 +1952,11 @@ class DateTime(object):
 
 
 class Date(object):
+    py_data_type = unicode
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -2059,11 +2072,11 @@ class Date(object):
 
 
 class Boolean(object):
+    py_data_type = bool
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
         self.data_type_name = data_type_name
-        self.py_data_type = bool
         self.direction = direction
         allowed = node.find('allowedValueList')
 
