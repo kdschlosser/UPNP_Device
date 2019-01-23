@@ -30,7 +30,7 @@ class Service(object):
 
         self.__parent = parent
         self.state_variables = {}
-        self.actions = {}
+        self.__actions = {}
         self.__node = node
         self.url = url
         self.__icons = {}
@@ -101,7 +101,11 @@ class Service(object):
                 url + control_url
             )
 
-            self.actions[action.__name__] = action
+            self.__actions[action.__name__] = action
+
+    @property
+    def methods(self):
+        return list(self.__actions.values())[:]
 
     @property
     def access_point(self):
@@ -111,8 +115,8 @@ class Service(object):
         if item in self.__dict__:
             return self.__dict__[item]
 
-        if item in self.actions:
-            return self.actions[item]
+        if item in self.__actions:
+            return self.__actions[item]
 
         if self.__node is not None:
             if item in self.__icons:
@@ -128,10 +132,24 @@ class Service(object):
 
         raise AttributeError(item)
 
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            methods=list(method.as_dict for method in self.methods),
+            icons=list(icon.as_dict for icon in self.icons)
+        )
+
+        if self.__node is not None:
+            for node in self.__node:
+                if node.text.strip() and node.text != '/':
+                    res[node.tag] = node.text
+        return res
+
     def __str__(self, indent=''):
         actions = ''
 
-        for action in self.actions.values():
+        for action in self.__actions.values():
             actions += action.__str__(indent + '    ')
 
         if not actions:

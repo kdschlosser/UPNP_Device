@@ -50,6 +50,18 @@ class Icon(object):
 
         return output
 
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            mime_type=self.mime_type,
+            width=self.width,
+            height=self.height,
+            depth=self.depth,
+            url=self.url,
+        )
+        return res
+
 
 TEMPLATE = '''
 {indent}Icon name: {name}

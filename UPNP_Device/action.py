@@ -14,9 +14,7 @@ class Action(object):
     def __init__(self, parent, node, state_variables, service, control_url):
         self.__parent = parent
         self.params = []
-        self.param_names = []
         self.ret_vals = []
-        self.ret_val_names = []
         self.service = service
         self.control_url = control_url
 
@@ -29,22 +27,20 @@ class Action(object):
                 name = argument.find('name').text
                 direction = argument.find('direction').text
                 variable = argument.find('relatedStateVariable').text
-                variable = state_variables[variable](direction)
+                variable = state_variables[variable](name, direction)
 
                 if direction == 'in':
                     self.params += [variable]
-                    self.param_names += [name]
                 else:
                     self.ret_vals += [variable]
-                    self.ret_val_names += [name]
 
     def __call__(self, *args, **kwargs):
         for i, arg in enumerate(args):
             try:
-                kwargs[self.param_names[i]] = arg
+                kwargs[self.params[i].__name__] = arg
             except IndexError:
-                for param in self.param_names:
-                    print(param)
+                for param in self.params:
+                    print(param.__name__)
                 raise
 
         doc = Document()
@@ -64,13 +60,13 @@ class Action(object):
         fn = doc.createElementNS('', self.__name__)
         fn.setAttribute('xmlns:u', self.service)
 
-        for i, param in enumerate(self.params):
-            if self.param_names[i] not in kwargs:
+        for param in self.params:
+            if param.__name__ not in kwargs:
                 value = param(None)
             else:
-                value = param(kwargs[self.param_names[i]])
+                value = param(kwargs[param.__name__])
 
-            tmp_node = doc.createElement(self.param_names[i])
+            tmp_node = doc.createElement(param.__name__)
             tmp_text_node = doc.createTextNode(str(value))
             tmp_node.appendChild(tmp_text_node)
             fn.appendChild(tmp_node)
@@ -103,8 +99,8 @@ class Action(object):
 
             response = body.find(self.__name__ + 'Response')
             if response is not None:
-                for i, ret_val in enumerate(self.ret_vals):
-                    value = response.find(self.ret_val_names[i])
+                for ret_val in self.ret_vals:
+                    value = response.find(ret_val.__name__)
                     if value is None:
                         value = ret_val(None)
                     else:
@@ -119,17 +115,25 @@ class Action(object):
         return return_value
 
     @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            params=list(param.as_dict for param in self.params),
+            ret_vals=list(ret_val.as_dict for ret_val in self.ret_vals)
+        )
+        return res
+
+    @property
     def access_point(self):
         return self.__parent.access_point + '.' + self.__name__
 
     def __str__(self, indent=''):
         if self.params:
-            param_names = ', '.join(self.param_names)
+            param_names = ', '.join(param.__name__ for param in self.params)
             params = '\n'
 
-            for i, param in enumerate(self.params):
-                params += indent + '    Name: ' + self.param_names[i]
-                params += param.__str__(indent + '    ') + '\n'
+            for param in self.params:
+                params += param.__str__(indent=indent + '    ') + '\n'
 
         else:
             params = 'None\n\n'
@@ -137,12 +141,12 @@ class Action(object):
 
         if self.ret_vals:
             ret_val_names = (
-                ', '.join(self.ret_val_names)) + ' = '
+                ', '.join(ret_val.__name__ for ret_val in self.ret_vals)
+            ) + ' = '
             ret_vals = '\n'
 
-            for i, val in enumerate(self.ret_vals):
-                ret_vals += indent + '    Name: ' + self.ret_val_names[i]
-                ret_vals += val.__str__(indent=indent + '        ') + '\n'
+            for val in self.ret_vals:
+                ret_vals += val.__str__(indent=indent + '    ') + '\n'
 
         else:
             ret_vals = 'None\n\n'

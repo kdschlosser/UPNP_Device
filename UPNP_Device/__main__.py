@@ -9,7 +9,25 @@ import sys
 
 
 def main():
+    args = []
+    execute = None
+    execute_args = []
+
+    argv_iter = (arg for arg in sys.argv[1:])
+    for arg in argv_iter:
+        if arg.startswith('-v') or arg == '--verbose':
+            args += [arg]
+        elif arg in ('--dump', '--timeout'):
+            args += [arg, argv_iter.next()]
+        elif arg == '--execute':
+            execute = argv_iter.next()
+        elif arg.startswith('--'):
+            execute_args += [arg, argv_iter.next()]
+        else:
+            args += [arg]
+
     parser = argparse.ArgumentParser(prog='UPNP_Device')
+
     parser.add_argument(
         "-v",
         "--verbose",
@@ -29,13 +47,19 @@ def main():
         help="discover timeout in seconds"
     )
     parser.add_argument(
+        "--execute",
+        type=str,
+        default='',
+        help="method to execute. python dotted syntax (Access Point)"
+    )
+    parser.add_argument(
         "ips",
         nargs="*",
         default=[],
         help="optional - ip addresses"
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     if not args.verbose:
         log_level = logging.ERROR
@@ -71,16 +95,110 @@ def main():
         event.wait(1)
     print()
 
-    for dvc in found_devices:
-        print(dvc)
-
     for ip in args.ips:
         for device in found_devices:
             if device.ip_address == ip:
                 break
         else:
             logging.error('Unable to locate a device at IP ' + ip)
+            sys.exit(1)
 
+    for dvc in found_devices:
+        if execute is None:
+            print(dvc)
+        else:
+            method = dvc
+            execute = execute.replace('UPNPObject.', '').split('.')
+            for item in execute:
+                method = getattr(method, item, None)
+                if method is None:
+                    raise RuntimeError('invalid execute: ' + item)
+
+            if callable(method):
+                parser = argparse.ArgumentParser(prog=method.__name__)
+
+                for param in method.params:
+                    default = param.default_value
+                    if default is not None and default == 'NOT_IMPLEMENTED':
+                        raise NotImplementedError('.'.join(execute))
+
+                    if (
+                        hasattr(param, 'allowed_values') and
+                        param.allowed_values is not None
+                    ):
+                        if default is None:
+                            parser.add_argument(
+                                '--' + param.__name__,
+                                dest=param.__name__,
+                                type=param.py_data_type,
+                                choices=param.allowed_values,
+                                required=True
+                            )
+                        else:
+                            parser.add_argument(
+                                '--' + param.__name__,
+                                dest=param.__name__,
+                                type=param.py_data_type,
+                                default=default,
+                                choices=param.allowed_values,
+                                required=False
+                            )
+                    else:
+                        if default is None:
+                            parser.add_argument(
+                                '--' + param.__name__,
+                                dest=param.__name__,
+                                type=param.py_data_type,
+                                required=True
+                            )
+                        else:
+                            parser.add_argument(
+                                '--' + param.__name__,
+                                dest=param.__name__,
+                                type=param.py_data_type,
+                                default=default,
+                                required=False
+                            )
+                args = parser.parse_args(execute_args)
+                kwargs = {k: v for k, v in vars(args).items()}
+                result = method(**kwargs)
+
+                for ret_val in method.ret_vals:
+                    print(ret_val.__name__ + ':', repr(result.pop(0)))
+
+            else:
+                print(repr(method))
+
+        # import json
+        #
+        # data = dvc.as_dict
+        #
+        # def iter_data(d):
+        #     for key, value in list(d.items())[:]:
+        #         if value in (unicode, float, int, bool):
+        #             value = str(value)
+        #
+        #         if isinstance(value, unicode):
+        #             value = value.encode('utf-8')
+        #         elif isinstance(value, dict):
+        #             iter_data(d)
+        #         elif isinstance(value, list):
+        #             for i, item in enumerate(value[:]):
+        #                 if isinstance(item, dict):
+        #                     iter_data(item)
+        #                 elif isinstance(item, unicode):
+        #                     item = item.encode('utf-8')
+        #
+        #                 value[i] = item
+        #
+        #         del d[key]
+        #
+        #         if isinstance(key, unicode):
+        #             key = key.encode('utf-8')
+        #         d[key] = value
+        #     return d
+        #
+        # print(json.dumps(iter_data(data), indent=4))
 
 if __name__ == "__main__":
     main()

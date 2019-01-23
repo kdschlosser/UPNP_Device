@@ -120,6 +120,14 @@ class UPNPObject(object):
         raise AttributeError(item)
 
     @property
+    def as_dict(self):
+        res = dict(
+            services=list(service.as_dict for service in self.services),
+            devices=list(device.as_dict for device in self.devices)
+        )
+        return res
+
+    @property
     def access_point(self):
         return self.__class__.__name__
 

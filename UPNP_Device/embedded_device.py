@@ -124,18 +124,38 @@ class EmbeddedDevice(object):
         if item in self.__dict__:
             return self.__dict__[item]
 
-        if item in self.__services:
-            return self.__services[item]
-        if item in self.__devices:
-            return self.__devices[item]
-        if item in self.__icons:
-            return self.__icons[item]
+        if self.__node is not None:
+            if item in self.__services:
+                return self.__services[item]
+            if item in self.__devices:
+                return self.__devices[item]
+            if item in self.__icons:
+                return self.__icons[item]
+
+            node = self.__node.find(item)
+            if node is not None:
+                return node.text
 
         if item in self.__class__.__dict__:
             if hasattr(self.__class__.__dict__[item], 'fget'):
                 return self.__class__.__dict__[item].fget(self)
 
         raise AttributeError(item)
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            icons=list(icon.as_dict for icon in self.icons),
+            services=list(service.as_dict for service in self.services),
+            devices=list(device.as_dict for device in self.devices)
+        )
+
+        if self.__node is not None:
+            for node in self.__node:
+                if node.text.strip() and node.text != '/':
+                    res[node.tag] = node.text
+        return res
 
     def __get_xml_text(self, tag):
         value = self.__node.find(tag)

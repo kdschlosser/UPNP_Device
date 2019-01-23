@@ -47,15 +47,18 @@ class StateVariable(object):
 
         self.data_type = data_type_classes[data_type]
 
-    def __call__(self, direction):
-        data_type = self.data_type(self.node, direction)
-        data_type.__name__ = self.name
+    def __call__(self, name, direction):
+        data_type = self.data_type(name, self.name, self.node, direction)
+
         return data_type
 
 
 class UUID(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -74,26 +77,41 @@ class UUID(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='uuid'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
 
@@ -155,7 +173,10 @@ class UUID(object):
 
 
 class Fixed144(object):
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -186,26 +207,39 @@ class Fixed144(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='8 byte float'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.minimum is not None:
-            output += indent + 'Minimum: ' + repr(self.minimum) + '\n'
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
 
         if self.maximum is not None:
-            output += indent + 'Maximum: ' + str(self.maximum) + '\n'
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
 
         if self.step is not None:
-            output += indent + 'Step: ' + repr(self.step) + '\n'
+            output += indent + '    Step: ' + repr(self.step) + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=float,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -273,7 +307,10 @@ class Fixed144(object):
 
 class BinBase64(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
 
         allowed_values = node.find('allowedValueList')
@@ -294,32 +331,48 @@ class BinBase64(object):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '   Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -365,20 +418,29 @@ class BinBase64(object):
                     )
                 )
 
-            value = base64.encodebytes(value)
+            if PY3:
+                value = base64.encodebytes(value)
+            else:
+                value = base64.encodestring(value)
 
         elif value is not None:
             if self.default_value == 'NOT_IMPLEMENTED':
                 value = self.default_value
             else:
-                value = base64.decodebytes(value)
+                if PY3:
+                    value = base64.decodebytes(value)
+                else:
+                    value = base64.decodestring(value)
 
         return value
 
 
 class BinHex(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -397,26 +459,41 @@ class BinHex(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='hex, int'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -474,13 +551,15 @@ class BinHex(object):
             if self.default_value == 'NOT_IMPLEMENTED':
                 value = self.default_value
 
-
         return value
 
 
 class Char(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -500,32 +579,48 @@ class Char(object):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='chr, byte'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='chr, unichr'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -582,7 +677,10 @@ class Char(object):
 
 
 class Float(object):
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -613,26 +711,39 @@ class Float(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='float'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.minimum is not None:
-            output += indent + 'Minimum: ' + repr(self.minimum) + '\n'
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
 
         if self.maximum is not None:
-            output += indent + 'Maximum: ' + str(self.maximum) + '\n'
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
 
         if self.step is not None:
-            output += indent + 'Step: ' + repr(self.step) + '\n'
+            output += indent + '    Step: ' + repr(self.step) + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=float,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -681,7 +792,10 @@ class Float(object):
 
 
 class R8(object):
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -712,26 +826,39 @@ class R8(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='8 byte float'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.minimum is not None:
-            output += indent + 'Minimum: ' + repr(self.minimum) + '\n'
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
 
         if self.maximum is not None:
-            output += indent + 'Maximum: ' + str(self.maximum) + '\n'
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
 
         if self.step is not None:
-            output += indent + 'Step: ' + repr(self.step) + '\n'
+            output += indent + '    Step: ' + repr(self.step) + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=float,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -802,7 +929,10 @@ class Number(R8):
 
 
 class R4(object):
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = float
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -833,7 +963,8 @@ class R4(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='4 byte float'
         )
 
@@ -841,18 +972,30 @@ class R4(object):
             return output + indent + 'NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.minimum is not None:
-            output += indent + 'Minimum: ' + repr(self.minimum) + '\n'
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
 
         if self.maximum is not None:
-            output += indent + 'Maximum: ' + str(self.maximum) + '\n'
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
 
         if self.step is not None:
-            output += indent + 'Step: ' + repr(self.step) + '\n'
+            output += indent + '    Step: ' + repr(self.step) + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=float,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -908,7 +1051,10 @@ class SignedUnsignedBase(object):
     _min = 0
     _max = 0
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = int
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -940,26 +1086,39 @@ class SignedUnsignedBase(object):
 
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type=self._label + ' int'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.minimum is not None:
-            output += indent + 'Minimum: ' + repr(self.minimum) + '\n'
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
 
         if self.maximum is not None:
-            output += indent + 'Maximum: ' + str(self.maximum) + '\n'
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
 
         if self.step is not None:
-            output += indent + 'Step: ' + repr(self.step) + '\n'
+            output += indent + '    Step: ' + repr(self.step) + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=int,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -1059,7 +1218,10 @@ class UI1(SignedUnsignedBase):
 
 
 class Int(object):
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = int
         self.direction = direction
         self.minimum = None
         self.maximum = None
@@ -1091,26 +1253,39 @@ class Int(object):
 
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='int'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.minimum is not None:
-            output += indent + 'Minimum: ' + repr(self.minimum) + '\n'
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
 
         if self.maximum is not None:
-            output += indent + 'Maximum: ' + str(self.maximum) + '\n'
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
 
         if self.step is not None:
-            output += indent + 'Step: ' + repr(self.step) + '\n'
+            output += indent + '    Step: ' + repr(self.step) + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=int,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
 
     def __call__(self, value):
 
@@ -1159,7 +1334,10 @@ class Int(object):
 
 class String(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1175,34 +1353,50 @@ class String(object):
 
         self.default_value = default_value
 
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
+
     def __str__(self, indent=''):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += indent + 'Allowed values:\n'
+                output += indent + '    Allowed values:\n'
             else:
-                output += indent + 'Possible returned values:\n'
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
 
@@ -1265,7 +1459,10 @@ class URI(String):
 
 class TimeTZ(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1281,34 +1478,50 @@ class TimeTZ(object):
 
         self.default_value = default_value
 
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
+
     def __str__(self, indent=''):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
 
@@ -1366,7 +1579,10 @@ class TimeTZ(object):
 
 class Time(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1386,32 +1602,48 @@ class Time(object):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -1462,13 +1694,15 @@ class Time(object):
             if self.default_value == 'NOT_IMPLEMENTED':
                 value = self.default_value
 
-
         return value
 
 
 class DateTimeTZ(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1484,34 +1718,50 @@ class DateTimeTZ(object):
 
         self.default_value = default_value
 
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
+
     def __str__(self, indent=''):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
 
@@ -1569,7 +1819,10 @@ class DateTimeTZ(object):
 
 class DateTime(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1589,32 +1842,48 @@ class DateTime(object):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
 
@@ -1671,7 +1940,10 @@ class DateTime(object):
 
 class Date(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = unicode
         self.direction = direction
         allowed_values = node.find('allowedValueList')
         if allowed_values is not None:
@@ -1691,32 +1963,48 @@ class Date(object):
         if PY3:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, bytes'
             )
         else:
             output = TEMPLATE.format(
                 indent=indent,
-                upnp_data_type=self.__name__,
+                name=self.__name__,
+                upnp_data_type=self.data_type_name,
                 py_data_type='str, unicode'
             )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + self.default_value + '\n'
+            output += indent + '    Default: ' + self.default_value + '\n'
 
         if self.allowed_values is not None:
 
             if self.direction == 'in':
-                output += [indent + 'Allowed values:']
+                output += indent + '    Allowed values:\n'
             else:
-                output += [indent + 'Possible returned values:']
+                output += indent + '    Possible returned values:\n'
             for item in self.allowed_values:
-                output += indent + '    ' + item + '\n'
+                output += indent + '        ' + item + '\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=unicode
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = self.allowed_values
+        else:
+            res['returned_values'] = self.allowed_values
+
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -1772,7 +2060,10 @@ class Date(object):
 
 class Boolean(object):
 
-    def __init__(self, node, direction):
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.py_data_type = bool
         self.direction = direction
         allowed = node.find('allowedValueList')
 
@@ -1809,22 +2100,37 @@ class Boolean(object):
     def __str__(self, indent=''):
         output = TEMPLATE.format(
             indent=indent,
-            upnp_data_type=self.__name__,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
             py_data_type='bool'
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + 'Default: ' + repr(self.default_value) + '\n'
+            output += indent + '    Default: ' + repr(self.default_value) + '\n'
 
         if self.direction == 'in':
-            output += indent + 'Allowed values: True/False\n'
+            output += indent + '    Allowed values: True/False\n'
         else:
             output += indent + 'Possible returned values: True/False\n'
 
         return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=bool
+        )
+        if self.direction == 'in':
+            res['allowed_values'] = [False, True]
+        else:
+            res['returned_values'] = [False, True]
+
+        return res
 
     def __call__(self, value):
         if value is None:
@@ -1855,6 +2161,7 @@ class Boolean(object):
 
 
 TEMPLATE = '''
-{indent}UPNP data type: {upnp_data_type}
-{indent}Py data type: {py_data_type}
+{indent}{name}:
+{indent}    UPNP data type: {upnp_data_type}
+{indent}    Py data type: {py_data_type}
 '''
