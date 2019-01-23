@@ -17,6 +17,11 @@ def main():
     for arg in argv_iter:
         if arg.startswith('-v') or arg == '--verbose':
             args += [arg]
+        elif arg in ('-h', '--help'):
+            if execute is not None:
+                execute_args += [arg]
+            else:
+                args += [arg]
         elif arg in ('--dump', '--timeout'):
             args += [arg, argv_iter.next()]
         elif arg == '--execute':
@@ -115,7 +120,7 @@ def main():
                     raise RuntimeError('invalid execute: ' + item)
 
             if callable(method):
-                parser = argparse.ArgumentParser(prog=method.__name__)
+                parser = argparse.ArgumentParser(prog='--execute ' + '.'.join(execute))
 
                 for param in method.params:
                     default = param.default_value

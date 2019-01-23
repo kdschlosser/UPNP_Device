@@ -1,6 +1,7 @@
 # UPNP Device
 Discovers UPNP devices on the network.
 
+***ADDED COMMAND LINE INTERFACE***
 
 This is an extremely simple script to use. It consists of 2 mechanisms
 to discover devices.
@@ -41,9 +42,43 @@ devices as well. and so on and so forth.
 when you print the UPNP object you will notice some data that states "Access point"
 this is what you would use to access that specific piece.
 
-as an example.
-from my TV
+This package is Python 2.7+ compatible
+It does require the six package as well as the requests package.
 
+
+## Command line interface
+
+
+```
+
+
+
+
+usage: upnp_device [-h --help] [-v --verbose] [--dump DIRECTORY] [--timeout TIMEEOUT]
+                   [--execute ACCESS_POINT [additional execute parameters [-h, --help]]]
+                   [ip [ip ...]]
+
+
+positional arguments:
+  *optional* ip                 ip address you want to search for
+```
+Here is the descriptions for the arguments<br></br>
+
+optional argument|description
+-----------------|-----------
+-h, --help|show this help message and exit
+-v, --verbose|increase output verbosity
+--dump DIRECTORY|Directory wher you want to save the original UPNP xml files
+--timeout TIMEEOUT|Search timeout in seconds. Default is 5
+--execute ACCESS_POINT|If you do not specify this switch you will see a printout. In that printout you will see lines that say Access Point. this is what you want to enter as a parameter for this switch. you will also need to add more command line switches and values for each of the parameters that need to be passed. so if you havee a parameter of InstanceID you would add the switch like this --InstanceID 0 if you want help that will list out the parameters specify -h or --help after --executable
+
+
+
+Example print outs
+
+* TV
+
+```
     UN55D8000
     IP Address: 192.168.1.201
     ==============================================
@@ -200,11 +235,11 @@ from my TV
 
     Devices: None
 
+```
 
-and this is from my router
+* Router
 
-
-
+```
     RT224_Dual_WAN_Gigabit_VPN_Router
     IP Address: 192.168.1.1
     ==============================================
@@ -356,14 +391,7 @@ and this is from my router
 
 
             Devices: None
-
-
+```
 
 you can also just get a printout of a specific device, service, or method
 by simply printing that object
-
-This package is Python 2.7+ compatible
-It does require the six package as well as the requests package.
-
-
-
