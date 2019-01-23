@@ -39,38 +39,12 @@ Content-Length: 0\r
 \r
 '''
 
-'''NOTIFY * HTTP/1.1
-HOST: 239.255.255.250:1900
-CACHE-CONTROL: max-age=1800
-LOCATION: http://192.168.1.1:49152/gatedesc_224.xml
-OPT: "http://schemas.upnp.org/upnp/1/0/"; ns=01
-01-NLS: a578cd9c-440d-11e8-973b-e4f6d5f2e149
-NT: urn:schemas-upnp-org:service:WANIPConnection:1
-NTS: ssdp:alive
-SERVER: Linux/2.6.16.26-Cavium-Octeon, UPnP/1.0, Portable SDK for UPnP devices/1.6.19
-X-User-Agent: redsonic
-USN: uuid:75802409-bccb-40e7-8e6c-fa095ecce13e::urn:schemas-upnp-org:service:WANIPConnection:1
-
-'''
-
 
 def discover(timeout=5, log_level=None, search_ips=[], dump=''):
     if log_level is not None:
         logging.basicConfig(format="%(message)s", level=log_level)
         if log_level is not None:
             logger.setLevel(log_level)
-
-    # Received 6/11/2018 at 9:38:51 AM (828)
-    #
-    # HTTP/1.1 200 OK
-    # CACHE-CONTROL: max-age = 1800
-    # EXT:
-    # LOCATION: http://192.168.1.63:52235/rcr/RemoteControlReceiver.xml
-    # SERVER: Linux/9.0 UPnP/1.0 PROTOTYPE/1.0
-    # ST: urn:samsung.com:device:RemoteControlReceiver:1
-    # USN: uuid:2007e9e6-2ec1-f097-f2df-944770ea00a3::urn:samsung.com:device:
-    #           RemoteControlReceiver:1
-    # CONTENT-LENGTH: 0
 
     found = {}
     found_event = threading.Event()
@@ -86,7 +60,15 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
                 adapter_ips += [adapter_ip.ip]
 
     def convert_ssdp_response(packet, addr):
-        packet = packet.decode('utf-8').split('\n', 1)[1]
+        packet_type, packet = packet.decode('utf-8').split('\n', 1)
+        if '200 OK' in packet_type:
+            packet_type = 'response'
+        elif 'MSEARCH' in packet_type:
+            packet_type = 'search'
+        elif 'NOTIFY' in packet_type:
+            packet_type = 'notify'
+        else:
+            packet_type = 'unknown'
 
         packet = dict(
             (
@@ -95,29 +77,14 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
             ) for line in packet.split('\n') if line.strip()
         )
 
-        if 'LOCATION' in packet:
-            if dump:
-                with open(os.path.join(dump, 'SSDP.log'), 'a') as f:
-                    f.write(json.dumps(packet, indent=4) + '\n')
+        packet['TYPE'] = packet_type
 
-            logger.debug(
-                'SSDP: %s found LOCATION: %s',
-                addr,
-                packet['LOCATION']
-            )
+        if dump:
+            with open(os.path.join(dump, 'SSDP.log'), 'a') as f:
+                f.write(json.dumps(packet, indent=4) + '\n')
 
-            if 'NT' in packet:
-                logger.debug(
-                    'SSDP: %s found NT: %s',
-                    addr,
-                    packet['NT']
-                )
-            if 'ST' in packet:
-                logger.debug(
-                    'SSDP: %s found ST: %s',
-                    addr,
-                    packet['ST']
-                )
+        logger.debug('SSDP: inbound packet for IP ' + addr)
+        logger.debug(json.dumps(packet, indent=4))
 
         return packet
 
@@ -169,29 +136,35 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
             t.daemon = True
             threads.append(t)
             t.start()
-
-        while True:
-            try:
+        try:
+            while True:
                 data, addr = sock.recvfrom(1024)
-            except socket.timeout:
-                break
 
-            if target_ips and addr[0] not in target_ips:
-                continue
+                if target_ips and addr[0] not in target_ips:
+                    continue
 
-            packet = convert_ssdp_response(data, addr[0])
+                packet = convert_ssdp_response(data, addr[0])
 
-            if 'LOCATION' not in packet:
-                continue
+                if packet['TYPE'] != 'response' or 'LOCATION' not in packet:
+                    continue
 
-            if addr[0] not in found:
-                found[addr[0]] = set()
-                t = threading.Thread(target=found_thread, args=(addr[0],))
-                t.daemon = True
-                threads.append(t)
-                t.start()
+                if addr[0] not in found:
+                    found[addr[0]] = set()
+                    t = threading.Thread(target=found_thread, args=(addr[0],))
+                    t.daemon = True
+                    threads.append(t)
+                    t.start()
 
-            found[addr[0]].add(packet['LOCATION'])
+                found[addr[0]].add(packet['LOCATION'])
+
+        except socket.timeout:
+            pass
+
+        except socket.error:
+            import traceback
+
+            logger.debug(traceback.format_exc())
+
         try:
             sock.close()
         except socket.error:
@@ -211,10 +184,8 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
 
                 packet = convert_ssdp_response(data, addr[0])
 
-                if 'LOCATION' not in packet:
+                if packet['TYPE'] != 'response' or 'LOCATION' not in packet:
                     continue
-
-                logger.debug('SSDP: %s - > %s', addr[0], data)
 
                 found[addr[0]].add(packet['LOCATION'])
 

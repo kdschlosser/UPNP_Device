@@ -20,4 +20,5 @@ setup(
             "upnp_device=UPNP_Device.__main__:main"
         ]
     },
+    zip_safe=False
 )

@@ -30,17 +30,27 @@ class UPNPObject(object):
             url = url_template + (
                 location.replace('http://', '').split('/')[0]
             )
-            '"http://92.168.1.203:80"'
+
             location = location.replace(url, '')
             response = requests.get(url + location)
 
             if dump:
-                loc = url + location
-                path = loc.replace('http://', '').split('/', 1)[-1]
-                path, file_name = path.rsplit('/', 1)
-                path = os.path.join(dump, path)
+                path = location
+                if path.startswith('/'):
+                    path = path[1:]
+
+                if '/' in path:
+                    path, file_name = path.rsplit('/', 1)
+                    path = os.path.join(dump, path)
+                else:
+                    file_name = path
+                    path = dump
+
                 if not os.path.exists(path):
                     os.makedirs(path)
+
+                if not file_name.endswith('.xml'):
+                    file_name += '.xml'
 
                 with open(os.path.join(path, file_name), 'w') as f:
                     f.write(response.content)
@@ -63,10 +73,6 @@ class UPNPObject(object):
                 control_url = service.find('controlURL').text.replace(url, '')
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
-                if location is not None:
-                    pth = location[1:].split('/')[0]
-                    if pth not in scpdurl:
-                        scpdurl = ('/' + pth + '/' + scpdurl)
 
                 service = Service(
                     self,
@@ -75,14 +81,19 @@ class UPNPObject(object):
                     service_type,
                     control_url,
                     node,
-                    dump
+                    dump=dump
                 )
                 name = service_id.split(':')[-1]
                 service.__name__ = name
                 self.__services[name] = service
 
             for device in devices:
-                device = EmbeddedDevice(url, node=device, parent=self, dump=dump)
+                device = EmbeddedDevice(
+                    url,
+                    node=device,
+                    parent=self,
+                    dump=dump
+                )
                 self.__devices[device.__name__] = device
 
             if cls_name is None:

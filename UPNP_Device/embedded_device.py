@@ -1,43 +1,19 @@
 # -*- coding: utf-8 -*-
-
-import requests
-import os
-from lxml import etree
 try:
-    from .xmlns import strip_xmlns
     from .icon import Icon
     from .service import Service
 except ImportError:
-    from xmlns import strip_xmlns
     from icon import Icon
     from service import Service
 
 
 class EmbeddedDevice(object):
 
-    def __init__(self, url, location=None, node=None, parent=None, dump=''):
+    def __init__(self, url, node=None, parent=None, dump=''):
         self.__parent = parent
         self.__services = {}
         self.__devices = {}
         self.__icons = {}
-        if node is None:
-            response = requests.get(url + location.replace(url, ''))
-
-            if dump:
-                loc = url + location.replace(url, '')
-                path = loc.replace('http://', '').split('/', 1)[-1]
-                path, file_name = path.rsplit('/', 1)
-                path = os.path.join(dump, path)
-
-                if not os.path.exists(path):
-                    os.makedirs(path)
-
-                with open(os.path.join(path, file_name), 'w') as f:
-                    f.write(response.content)
-
-            root = etree.fromstring(response.content)
-            root = strip_xmlns(root)
-            node = root.find('device')
 
         icons = node.find('iconList')
         if icons is None:
@@ -60,18 +36,28 @@ class EmbeddedDevice(object):
             control_url = service.find('controlURL').text.replace(url, '')
             service_id = service.find('serviceId').text
             service_type = service.find('serviceType').text
-            if location is not None:
-                pth = location[1:].split('/')[0]
-                if pth not in scpdurl:
-                    scpdurl = ('/' + pth + '/' + scpdurl)
 
-            service = Service(self, url, scpdurl, service_type, control_url, dump=dump)
+            service = Service(
+                self,
+                url,
+                scpdurl,
+                service_type,
+                control_url,
+                dump=dump
+            )
+
             name = service_id.split(':')[-1]
             service.__name__ = name
             self.__services[name] = service
 
         for device in devices:
-            device = EmbeddedDevice(url, node=device, parent=self, dump=dump)
+            device = EmbeddedDevice(
+                url,
+                node=device,
+                parent=self,
+                dump=dump
+            )
+
             self.__devices[device.__name__] = device
 
         self.url = url

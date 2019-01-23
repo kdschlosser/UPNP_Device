@@ -27,6 +27,7 @@ class Service(object):
         node=None,
         dump=''
     ):
+
         self.__parent = parent
         self.state_variables = {}
         self.actions = {}
@@ -49,13 +50,21 @@ class Service(object):
         location = location.replace('//', '/')
         response = requests.get(url + location)
         if dump:
-            loc = url + location
-            path = loc.replace('http://', '').split('/', 1)[-1]
-            path, file_name = path.rsplit('/', 1)
-            path = os.path.join(dump, path)
+            path = location
+            if path.startswith('/'):
+                path = path[1:]
+            if '/' in path:
+                path, file_name = path.rsplit('/', 1)
+                path = os.path.join(dump, path)
+            else:
+                file_name = path
+                path = dump
 
             if not os.path.exists(path):
                 os.makedirs(path)
+
+            if not file_name.endswith('.xml'):
+                file_name += '.xml'
 
             with open(os.path.join(path, file_name), 'w') as f:
                 f.write(response.content)
