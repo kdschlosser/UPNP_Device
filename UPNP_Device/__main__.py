@@ -23,11 +23,11 @@ def main():
             else:
                 args += [arg]
         elif arg in ('--dump', '--timeout'):
-            args += [arg, argv_iter.next()]
+            args += [arg, next(argv_iter)]
         elif arg == '--execute':
-            execute = argv_iter.next()
+            execute = next(argv_iter)
         elif arg.startswith('--'):
-            execute_args += [arg, argv_iter.next()]
+            execute_args += [arg, next(argv_iter)]
         else:
             args += [arg]
 

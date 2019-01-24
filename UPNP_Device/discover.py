@@ -43,7 +43,7 @@ Content-Length: 0\r
 def discover(timeout=5, log_level=None, search_ips=[], dump=''):
     if dump and not os.path.exists(dump):
         os.makedirs(dump)
-        
+
     if log_level is not None:
         logging.basicConfig(format="%(message)s", level=log_level)
         if log_level is not None:
