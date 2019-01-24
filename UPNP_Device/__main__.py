@@ -133,10 +133,11 @@ def main():
                     ):
                         if default is None:
                             parser.add_argument(
-                                param.__name__,
+                                '--' + param.__name__,
                                 dest=param.__name__,
                                 type=param.py_data_type,
                                 choices=param.allowed_values,
+                                help='Required argument',
                                 required=True
                             )
                         else:
@@ -151,9 +152,10 @@ def main():
                     else:
                         if default is None:
                             parser.add_argument(
-                                param.__name__,
+                                '--' + param.__name__,
                                 dest=param.__name__,
                                 type=param.py_data_type,
+                                help='Required argument',
                                 required=True
                             )
                         else:
