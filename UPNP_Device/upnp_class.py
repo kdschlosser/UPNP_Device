@@ -53,7 +53,7 @@ class UPNPObject(object):
                     file_name += '.xml'
 
                 if isinstance(response.content, bytes):
-                    content = response.content.decod('utf-8')
+                    content = response.content.decode('utf-8')
                 else:
                     content = response.content
 
