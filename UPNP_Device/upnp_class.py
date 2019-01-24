@@ -52,8 +52,13 @@ class UPNPObject(object):
                 if not file_name.endswith('.xml'):
                     file_name += '.xml'
 
+                if isinstance(response.content, bytes):
+                    content = response.content.decod('utf-8')
+                else:
+                    content = response.content
+
                 with open(os.path.join(path, file_name), 'w') as f:
-                    f.write(response.content)
+                    f.write(content)
 
             root = etree.fromstring(response.content)
             root = strip_xmlns(root)
