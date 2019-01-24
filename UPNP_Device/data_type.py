@@ -54,7 +54,7 @@ class StateVariable(object):
 
 
 class UUID(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -104,7 +104,7 @@ class UUID(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -307,7 +307,7 @@ class Fixed144(object):
 
 
 class BinBase64(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -366,7 +366,7 @@ class BinBase64(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -437,7 +437,7 @@ class BinBase64(object):
 
 
 class BinHex(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -487,7 +487,7 @@ class BinHex(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -556,7 +556,7 @@ class BinHex(object):
 
 
 class Char(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -614,7 +614,7 @@ class Char(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -1346,7 +1346,7 @@ class Int(object):
 
 
 class String(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -1371,7 +1371,7 @@ class String(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -1471,7 +1471,7 @@ class URI(String):
 
 
 class TimeTZ(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -1496,7 +1496,7 @@ class TimeTZ(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -1591,7 +1591,7 @@ class TimeTZ(object):
 
 
 class Time(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -1649,7 +1649,7 @@ class Time(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -1711,7 +1711,7 @@ class Time(object):
 
 
 class DateTimeTZ(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -1736,7 +1736,7 @@ class DateTimeTZ(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -1831,7 +1831,7 @@ class DateTimeTZ(object):
 
 
 class DateTime(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -1889,7 +1889,7 @@ class DateTime(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -1952,7 +1952,7 @@ class DateTime(object):
 
 
 class Date(object):
-    py_data_type = unicode
+    py_data_type = str
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -2010,7 +2010,7 @@ class Date(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=unicode
+            data_type=str
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
