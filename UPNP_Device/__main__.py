@@ -84,7 +84,12 @@ def main():
 
         event.set()
 
-        for device in UPNP_Device.discover(args.timeout, log_level, args.ips, args.dump):
+        for device in UPNP_Device.discover(
+            args.timeout,
+            log_level,
+            args.ips,
+            args.dump
+        ):
             found_devices.append(device)
         event.set()
 
@@ -120,7 +125,9 @@ def main():
                     raise RuntimeError('invalid execute: ' + item)
 
             if callable(method):
-                parser = argparse.ArgumentParser(prog='--execute ' + '.'.join(execute))
+                parser = argparse.ArgumentParser(
+                    prog='--execute ' + '.'.join(execute)
+                )
 
                 for param in method.params:
                     default = param.default_value

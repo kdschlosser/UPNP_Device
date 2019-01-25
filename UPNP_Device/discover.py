@@ -21,7 +21,8 @@ else:
 IPV4_MCAST_GRP = "239.255.255.250"
 IPV6_MCAST_GRP = "[ff02::c]"
 
-IPV4_SSDP = '''M-SEARCH * HTTP/1.1\r
+IPV4_SSDP = '''\
+M-SEARCH * HTTP/1.1\r
 ST: upnp:rootdevice\r
 MAN: "ssdp:discover"\r
 HOST: 239.255.255.250:1900\r
@@ -30,7 +31,8 @@ Content-Length: 0\r
 \r
 '''
 
-IPV6_SSDP = '''M-SEARCH * HTTP/1.1\r
+IPV6_SSDP = '''\
+M-SEARCH * HTTP/1.1\r
 ST: upnp:rootdevice\r
 MAN: "ssdp:discover"\r
 HOST: [ff02::c]:1900\r
@@ -40,7 +42,7 @@ Content-Length: 0\r
 '''
 
 
-def discover(timeout=5, log_level=None, search_ips=[], dump=''):
+def discover(timeout=5, log_level=None, search_ips=(), dump=''):
     if dump and not os.path.exists(dump):
         os.makedirs(dump)
 
@@ -56,7 +58,10 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
 
     for adapter in ifaddr.get_adapters():
         for adapter_ip in adapter.ips:
-            if isinstance(adapter_ip.ip, tuple) or adapter_ip.nice_name == 'lo0':
+            if (
+                isinstance(adapter_ip.ip, tuple) or
+                adapter_ip.nice_name == 'lo0'
+            ):
                 # adapter_ips += [adapter_ip.ip[0]]
                 continue
             else:
@@ -135,10 +140,10 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
 
         for target_ip in target_ips:
             found[target_ip] = set()
-            t = threading.Thread(target=found_thread, args=(target_ip,))
-            t.daemon = True
-            threads.append(t)
-            t.start()
+            trd = threading.Thread(target=found_thread, args=(target_ip,))
+            trd.daemon = True
+            threads.append(trd)
+            trd.start()
         try:
             while True:
                 data, addr = sock.recvfrom(1024)
@@ -153,10 +158,13 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
 
                 if addr[0] not in found:
                     found[addr[0]] = set()
-                    t = threading.Thread(target=found_thread, args=(addr[0],))
-                    t.daemon = True
-                    threads.append(t)
-                    t.start()
+                    trd = threading.Thread(
+                        target=found_thread,
+                        args=(addr[0],)
+                    )
+                    trd.daemon = True
+                    threads.append(trd)
+                    trd.start()
 
                 found[addr[0]].add(packet['LOCATION'])
 
@@ -178,8 +186,8 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
         if not threads:
             found_event.set()
 
-    def found_thread(ip):
-        sock = send_to(ip, timeout)
+    def found_thread(ip_addr):
+        sock = send_to(ip_addr, timeout)
 
         try:
             while True:

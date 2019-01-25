@@ -5,9 +5,9 @@ import requests
 import os
 from lxml import etree
 try:
-    from urlparse import urlparse
+    urlparse = __import__('urlparse').urlparse
 except ImportError:
-    from urllib.parse import urlparse
+    url_parse = __import__('urllib.parse').urlparse
 
 
 try:
