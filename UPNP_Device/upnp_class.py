@@ -88,7 +88,7 @@ class UPNPObject(object):
                     else:
                         control_url = scpdurl
                 else:
-                    control_url = control_url.text.replace(url, '')
+                    control_url = control_url.replace(url, '')
 
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
