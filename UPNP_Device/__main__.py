@@ -135,6 +135,7 @@ def main():
                     minimum = getattr(param, 'minimum', None)
                     maximum = getattr(param, 'maximum', None)
                     step = getattr(param, 'step', None)
+                    py_data_type = param.py_data_type[0]
 
                     help_string = []
 
@@ -160,7 +161,7 @@ def main():
                             parser.add_argument(
                                 '--' + param.__name__,
                                 dest=param.__name__,
-                                type=param.py_data_type,
+                                type=py_data_type,
                                 choices=param.allowed_values,
                                 help='Required argument' + help_string,
                                 required=True
@@ -169,7 +170,7 @@ def main():
                             parser.add_argument(
                                 '--' + param.__name__,
                                 dest=param.__name__,
-                                type=param.py_data_type,
+                                type=py_data_type,
                                 default=default,
                                 help='Optional argument' + help_string,
                                 choices=param.allowed_values,
@@ -180,7 +181,7 @@ def main():
                             parser.add_argument(
                                 '--' + param.__name__,
                                 dest=param.__name__,
-                                type=param.py_data_type,
+                                type=py_data_type,
                                 help='Required argument' + help_string,
                                 required=True
                             )
@@ -188,7 +189,7 @@ def main():
                             parser.add_argument(
                                 '--' + param.__name__,
                                 dest=param.__name__,
-                                type=param.py_data_type,
+                                type=py_data_type,
                                 default=default,
                                 help='Optional argument' + help_string,
                                 required=False
