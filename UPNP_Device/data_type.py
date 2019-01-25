@@ -42,7 +42,8 @@ class StateVariable(object):
             'ui8': UI8,
             'ui4': UI4,
             'ui2': UI2,
-            'ui1': UI1
+            'ui1': UI1,
+            'long': Long
         }
 
         self.data_type = data_type_classes[data_type]
@@ -626,6 +627,12 @@ class UI8(IntegerBase):
 
 class UI4(IntegerBase):
     _label = 'unsigned 32bit int'
+    _min = 0
+    _max = 4294967295
+
+
+class Long(IntegerBase):
+    _label = 'Long (unsigned 32bit int)'
     _min = 0
     _max = 4294967295
 
