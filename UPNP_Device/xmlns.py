@@ -15,9 +15,12 @@ def strip_xmlns(root):
     def strip_node(n):
         for item in xmlns:
             n.tag = n.tag.replace(item, '')
-        for child in n:
-            strip_node(child)
 
+        for child in n[:]:
+            try:
+                strip_node(child)
+            except AttributeError:
+                n.remove(child)
     strip_node(root)
 
     return root
