@@ -47,6 +47,7 @@ class Service(object):
 
         self.service = service
 
+        location = location.replace(url, '')
         location = location.replace('//', '/')
         response = requests.get(url + location)
         if dump:

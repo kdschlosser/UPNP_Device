@@ -124,20 +124,38 @@ def main():
 
                 for param in method.params:
                     default = param.default_value
+                    allowed_values = getattr(param, 'allowed_values', None)
+                    minimum = getattr(param, 'minimum', None)
+                    maximum = getattr(param, 'maximum', None)
+                    step = getattr(param, 'step', None)
+
+                    help_string = []
+
+                    if default is not None:
+                        help_string += ['Default: ' + str(default)]
+                    if minimum is not None:
+                        help_string += ['Minimum: ' + str(minimum)]
+                    if maximum is not None:
+                        help_string += ['Maximum: ' + str(maximum)]
+                    if step is not None:
+                        help_string += ['Increment: ' + str(step)]
+
+                    if help_string:
+                        help_string = '\n' + ('\n'.join(help_string))
+                    else:
+                        help_string = ''
+
                     if default is not None and default == 'NOT_IMPLEMENTED':
                         raise NotImplementedError('.'.join(execute))
 
-                    if (
-                        hasattr(param, 'allowed_values') and
-                        param.allowed_values is not None
-                    ):
+                    if allowed_values is not None:
                         if default is None:
                             parser.add_argument(
                                 '--' + param.__name__,
                                 dest=param.__name__,
                                 type=param.py_data_type,
                                 choices=param.allowed_values,
-                                help='Required argument',
+                                help='Required argument' + help_string,
                                 required=True
                             )
                         else:
@@ -146,6 +164,7 @@ def main():
                                 dest=param.__name__,
                                 type=param.py_data_type,
                                 default=default,
+                                help='Optional argument' + help_string,
                                 choices=param.allowed_values,
                                 required=False
                             )
@@ -155,7 +174,7 @@ def main():
                                 '--' + param.__name__,
                                 dest=param.__name__,
                                 type=param.py_data_type,
-                                help='Required argument',
+                                help='Required argument' + help_string,
                                 required=True
                             )
                         else:
@@ -164,6 +183,7 @@ def main():
                                 dest=param.__name__,
                                 type=param.py_data_type,
                                 default=default,
+                                help='Optional argument' + help_string,
                                 required=False
                             )
                 args = parser.parse_args(execute_args)
@@ -206,6 +226,7 @@ def main():
         #     return d
         #
         # print(json.dumps(iter_data(data), indent=4))
+
 
 if __name__ == "__main__":
     main()
