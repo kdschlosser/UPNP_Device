@@ -49,6 +49,10 @@ class Service(object):
 
         location = location.replace(url, '')
         location = location.replace('//', '/')
+
+        if not location.startswith('/'):
+            location = '/' + location
+
         response = requests.get(url + location)
         if dump:
             path = location
