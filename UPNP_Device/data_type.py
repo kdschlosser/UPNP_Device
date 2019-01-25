@@ -53,8 +53,8 @@ class StateVariable(object):
         return data_type
 
 
-class UUID(object):
-    py_data_type = str
+class StringBase(object):
+    py_data_type = (str, unicode)
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -75,394 +75,14 @@ class UUID(object):
         self.default_value = default_value
 
     def __str__(self, indent=''):
+        py_data_type = ['{}'] * len(self.py_data_type)
+        py_data_type = ', '.join(py_data_type)
+
         output = TEMPLATE.format(
             indent=indent,
             name=self.__name__,
             upnp_data_type=self.data_type_name,
-            py_data_type='uuid'
-        )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:'
-            else:
-                output += indent + '    Possible returned values:'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __call__(self, value):
-
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-
-            if isinstance(value, uuid.UUID):
-                value = str(value)[1:-1]
-
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                value = uuid.UUID(value)
-
-        return value
-
-
-class Fixed144(object):
-    py_data_type = float
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        self.minimum = None
-        self.maximum = None
-        self.step = None
-
-        allowed_range = node.find('allowedValueRange')
-        if allowed_range is not None:
-            minimum = allowed_range.find('minimum')
-            maximum = allowed_range.find('maximum')
-            step = allowed_range.find('step')
-
-            if minimum is not None and minimum.text:
-                self.minimum = float(minimum.text)
-            if maximum is not None and maximum.text:
-                self.maximum = float(maximum.text)
-            if step is not None and step.text:
-                self.step = float(step.text)
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = float(default_value.text)
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        output = TEMPLATE.format(
-            indent=indent,
-            name=self.__name__,
-            upnp_data_type=self.data_type_name,
-            py_data_type='8 byte float'
-        )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
-
-        if self.minimum is not None:
-            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
-
-        if self.maximum is not None:
-            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
-
-        if self.step is not None:
-            output += indent + '    Step: ' + repr(self.step) + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=float,
-            min=self.minimum,
-            max=self.maximum,
-            step=self.step,
-        )
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-
-            if not isinstance(value, float):
-                raise ValueError('Value is not an 8 byte float')
-
-            if (
-                value > 0 and
-                (
-                    value < 4.94065645841247E-324 or
-                    value > 1.79769313486232E308
-                )
-            ):
-                raise ValueError('Value is not an 8 byte float')
-
-            if (
-                value < 0 and
-                (
-                    value < -1.79769313486232E308 or
-                    value > -4.94065645841247E-324
-                )
-            ):
-                raise ValueError('Value is not an 8 byte float')
-
-            if self.minimum is not None and value < self.minimum:
-                raise ValueError(
-                    'Value {0} is lower then the minimum of {1}'.format(
-                        value,
-                        self.minimum
-                    )
-                )
-
-            if self.maximum is not None and value > self.maximum:
-                raise ValueError(
-                    'Value {0} is higher then the maximum of {1}'.format(
-                        value,
-                        self.maximum
-                    )
-                )
-
-            if self.step is not None and value % self.step:
-                raise ValueError(
-                    'Value is not an increment of ' + str(self.step)
-                )
-
-            value = '{0:14.4f}'.format(value)
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                value = float(value)
-
-        return value
-
-
-class BinBase64(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '   Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-            if PY3:
-                value = base64.encodebytes(value)
-            else:
-                value = base64.encodestring(value)
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                if PY3:
-                    value = base64.decodebytes(value)
-                else:
-                    value = base64.decodestring(value)
-
-        return value
-
-
-class BinHex(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        output = TEMPLATE.format(
-            indent=indent,
-            name=self.__name__,
-            upnp_data_type=self.data_type_name,
-            py_data_type='hex, int'
+            py_data_type=py_data_type.format(*self.py_data_type)
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
@@ -487,7 +107,7 @@ class BinHex(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=str
+            data_type=self.py_data_type
         )
         if self.direction == 'in':
             res['allowed_values'] = self.allowed_values
@@ -501,36 +121,23 @@ class BinHex(object):
             if self.default_value is None:
                 if self.direction == 'in':
                     raise ValueError('A value must be supplied')
+
             else:
                 value = self.default_value
 
         if self.direction == 'in':
-            if isinstance(value, int):
-                value = hex(value)
+            if not isinstance(value, (str, unicode)):
+                py_data_type = ['{}'] * len(self.py_data_type)
+                py_data_type = ', '.join(py_data_type)
 
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
+                msg = 'Incorrect data type. Expected type '
+                msg += py_data_type.format(*self.py_data_type)
+                msg += 'got type {0}.'
 
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
+                raise TypeError(msg.format(type(value)))
 
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
+            if isinstance(value, unicode):
+                value = value.decode('utf-8')
 
             if (
                 self.allowed_values is not None and
@@ -543,11 +150,6 @@ class BinHex(object):
                     )
                 )
 
-            value = value.replace('0X', '0x')
-
-            if not value.startswith('0x'):
-                raise ValueError('Value is not hex')
-
         elif value is not None:
             if self.default_value == 'NOT_IMPLEMENTED':
                 value = self.default_value
@@ -555,506 +157,11 @@ class BinHex(object):
         return value
 
 
-class Char(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='chr, byte'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='chr, unichr'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-            if len(value) != 1:
-                raise ValueError('Value is not a single character')
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-
-        return value
-
-
-class Float(object):
-    py_data_type = float
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        self.minimum = None
-        self.maximum = None
-        self.step = None
-
-        allowed_range = node.find('allowedValueRange')
-        if allowed_range is not None:
-            minimum = allowed_range.find('minimum')
-            maximum = allowed_range.find('maximum')
-            step = allowed_range.find('step')
-
-            if minimum is not None and minimum.text:
-                self.minimum = float(minimum.text)
-            if maximum is not None and maximum.text:
-                self.maximum = float(maximum.text)
-            if step is not None and step.text:
-                self.step = float(step.text)
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = float(default_value.text)
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        output = TEMPLATE.format(
-            indent=indent,
-            name=self.__name__,
-            upnp_data_type=self.data_type_name,
-            py_data_type='float'
-        )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
-
-        if self.minimum is not None:
-            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
-
-        if self.maximum is not None:
-            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
-
-        if self.step is not None:
-            output += indent + '    Step: ' + repr(self.step) + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=float,
-            min=self.minimum,
-            max=self.maximum,
-            step=self.step,
-        )
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-
-            if not isinstance(value, float):
-                raise ValueError('Value is not a float')
-
-            if self.minimum is not None and value < self.minimum:
-                raise ValueError(
-                    'Value {0} is lower then the minimum of {1}'.format(
-                        value,
-                        self.minimum
-                    )
-                )
-
-            if self.maximum is not None and value > self.maximum:
-                raise ValueError(
-                    'Value {0} is higher then the maximum of {1}'.format(
-                        value,
-                        self.maximum
-                    )
-                )
-
-            if self.step is not None and value % self.step:
-                raise ValueError(
-                    'Value is not an increment of ' + str(self.step)
-                )
-
-            value = str(value)
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                value = float(value)
-
-        return value
-
-
-class R8(object):
-    py_data_type = float
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        self.minimum = None
-        self.maximum = None
-        self.step = None
-
-        allowed_range = node.find('allowedValueRange')
-        if allowed_range is not None:
-            minimum = allowed_range.find('minimum')
-            maximum = allowed_range.find('maximum')
-            step = allowed_range.find('step')
-
-            if minimum is not None and minimum.text:
-                self.minimum = float(minimum.text)
-            if maximum is not None and maximum.text:
-                self.maximum = float(maximum.text)
-            if step is not None and step.text:
-                self.step = float(step.text)
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = float(default_value.text)
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        output = TEMPLATE.format(
-            indent=indent,
-            name=self.__name__,
-            upnp_data_type=self.data_type_name,
-            py_data_type='8 byte float'
-        )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
-
-        if self.minimum is not None:
-            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
-
-        if self.maximum is not None:
-            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
-
-        if self.step is not None:
-            output += indent + '    Step: ' + repr(self.step) + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=float,
-            min=self.minimum,
-            max=self.maximum,
-            step=self.step,
-        )
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-
-            if not isinstance(value, float):
-                raise ValueError('Value is not an 8 byte float')
-
-            if (
-                value > 0 and
-                (
-                    value < 4.94065645841247E-324 or
-                    value > 1.79769313486232E308
-                )
-            ):
-                raise ValueError('Value is not an 8 byte float')
-
-            if (
-                value < 0 and
-                (
-                    value < -1.79769313486232E308 or
-                    value > -4.94065645841247E-324
-                )
-            ):
-                raise ValueError('Value is not an 8 byte float')
-
-            if self.minimum is not None and value < self.minimum:
-                raise ValueError(
-                    'Value {0} is lower then the minimum of {1}'.format(
-                        value,
-                        self.minimum
-                    )
-                )
-
-            if self.maximum is not None and value > self.maximum:
-                raise ValueError(
-                    'Value {0} is higher then the maximum of {1}'.format(
-                        value,
-                        self.maximum
-                    )
-                )
-
-            if self.step is not None and value % self.step:
-                raise ValueError(
-                    'Value is not an increment of ' + str(self.step)
-                )
-
-            value = str(value)
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                value = float(value)
-
-        return value
-
-
-class Number(R8):
-    py_data_type = float
-
-
-class R4(object):
-    py_data_type = float
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        self.minimum = None
-        self.maximum = None
-        self.step = None
-
-        allowed_range = node.find('allowedValueRange')
-        if allowed_range is not None:
-            minimum = allowed_range.find('minimum')
-            maximum = allowed_range.find('maximum')
-            step = allowed_range.find('step')
-
-            if minimum is not None and minimum.text:
-                self.minimum = float(minimum.text)
-            if maximum is not None and maximum.text:
-                self.maximum = float(maximum.text)
-            if step is not None and step.text:
-                self.step = float(step.text)
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = float(default_value.text)
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        output = TEMPLATE.format(
-            indent=indent,
-            name=self.__name__,
-            upnp_data_type=self.data_type_name,
-            py_data_type='4 byte float'
-        )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + 'NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
-
-        if self.minimum is not None:
-            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
-
-        if self.maximum is not None:
-            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
-
-        if self.step is not None:
-            output += indent + '    Step: ' + repr(self.step) + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=float,
-            min=self.minimum,
-            max=self.maximum,
-            step=self.step,
-        )
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if (
-                not isinstance(value, float) or
-                value < 3.40282347E+38 or
-                value > 1.17549435E-38
-            ):
-                raise ValueError('Value is not a 4 byte float')
-
-            if self.minimum is not None and value < self.minimum:
-                raise ValueError(
-                    'Value {0} is lower then the minimum of {1}'.format(
-                        value,
-                        self.minimum
-                    )
-                )
-
-            if self.maximum is not None and value > self.maximum:
-                raise ValueError(
-                    'Value {0} is higher then the maximum of {1}'.format(
-                        value,
-                        self.maximum
-                    )
-                )
-
-            if self.step is not None and value % self.step:
-                raise ValueError(
-                    'Value is not an increment of ' + str(self.step)
-                )
-
-            value = str(value)
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                value = float(value)
-
-        return value
-
-
-class SignedUnsignedBase(object):
-    py_data_type = int
+class IntegerBase(object):
+    py_data_type = (int,)
     _label = ''
-    _min = 0
-    _max = 0
+    _min = -9223372036854775808
+    _max = 9223372036854775807
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -1092,14 +199,19 @@ class SignedUnsignedBase(object):
             indent=indent,
             name=self.__name__,
             upnp_data_type=self.data_type_name,
-            py_data_type=self._label + ' int'
+            py_data_type=self._label
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
             return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
+            output += (
+                indent +
+                '    Default: ' +
+                repr(self.default_value) +
+                '\n'
+            )
 
         if self.minimum is not None:
             output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
@@ -1117,7 +229,7 @@ class SignedUnsignedBase(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=int,
+            data_type=self.py_data_type,
             min=self.minimum,
             max=self.maximum,
             step=self.step,
@@ -1139,7 +251,7 @@ class SignedUnsignedBase(object):
                 value < self._min or
                 value > self._max
             ):
-                raise ValueError('Value is not a ' + self._label + ' integer')
+                raise ValueError('Value is not a ' + self._label)
 
             if self.minimum is not None and value < self.minimum:
                 raise ValueError(
@@ -1169,910 +281,12 @@ class SignedUnsignedBase(object):
                 value = self.default_value
             else:
                 value = int(value)
-
-        return value
-
-
-class I8(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'signed 64bit'
-    _min = -9223372036854775808
-    _max = 9223372036854775807
-
-
-class I4(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'signed 32bit'
-    _min = -2147483648
-    _max = 2147483647
-
-
-class I2(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'signed 16bit'
-    _min = -32768
-    _max = 32767
-
-
-class I1(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'signed 8bit'
-    _min = -128
-    _max = 127
-
-
-class UI8(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'unsigned 64bit'
-    _min = 0
-    _max = 18446744073709551615
-
-
-class UI4(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'unsigned 32bit'
-    _min = 0
-    _max = 4294967295
-
-
-class UI2(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'unsigned 16bit'
-    _min = 0
-    _max = 65535
-
-
-class UI1(SignedUnsignedBase):
-    py_data_type = int
-    _label = 'unsigned 8bit'
-    _min = 0
-    _max = 255
-
-
-class Int(object):
-    py_data_type = int
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        self.minimum = None
-        self.maximum = None
-        self.step = None
-
-        allowed_range = node.find('allowedValueRange')
-        if allowed_range is not None:
-            minimum = allowed_range.find('minimum')
-            maximum = allowed_range.find('maximum')
-            step = allowed_range.find('step')
-
-            if minimum is not None and minimum.text and minimum.text.isdigit():
-                self.minimum = int(minimum.text)
-            if maximum is not None and maximum.text and maximum.text.isdigit():
-                self.maximum = int(maximum.text)
-            if step is not None and step.text and step.text.isdigit():
-                self.step = int(step.text)
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = int(default_value.text)
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-
-        output = TEMPLATE.format(
-            indent=indent,
-            name=self.__name__,
-            upnp_data_type=self.data_type_name,
-            py_data_type='int'
-        )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
-
-        if self.minimum is not None:
-            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
-
-        if self.maximum is not None:
-            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
-
-        if self.step is not None:
-            output += indent + '    Step: ' + repr(self.step) + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=int,
-            min=self.minimum,
-            max=self.maximum,
-            step=self.step,
-        )
-        return res
-
-    def __call__(self, value):
-
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-        if self.direction == 'in':
-            if not isinstance(value, int):
-                raise ValueError('Value is not a integer')
-
-            if self.minimum is not None and value < self.minimum:
-                raise ValueError(
-                    'Value {0} is lower then the minimum of {1}'.format(
-                        value,
-                        self.minimum
-                    )
-                )
-
-            if self.maximum is not None and value > self.maximum:
-                raise ValueError(
-                    'Value {0} is higher then the maximum of {1}'.format(
-                        value,
-                        self.maximum
-                    )
-                )
-
-            if self.step is not None and value % self.step:
-                raise ValueError(
-                    'Value is not an increment of ' + str(self.step)
-                )
-
-            value = str(value)
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-            else:
-                value = int(value)
-
-        return value
-
-
-class String(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    def __call__(self, value):
-
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-
-        return value
-
-
-class URI(String):
-    pass
-
-
-class TimeTZ(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-
-        return value
-
-
-class Time(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-
-        return value
-
-
-class DateTimeTZ(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-
-        return value
-
-
-class DateTime(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __call__(self, value):
-
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
-
-        return value
-
-
-class Date(object):
-    py_data_type = str
-
-    def __init__(self, name, data_type_name, node, direction):
-        self.__name__ = name
-        self.data_type_name = data_type_name
-        self.direction = direction
-        allowed_values = node.find('allowedValueList')
-        if allowed_values is not None:
-            allowed_values = list(value.text for value in allowed_values)
-        self.allowed_values = allowed_values
-
-        default_value = node.find('defaultValue')
-        if default_value is not None:
-            if default_value.text == 'NOT_IMPLEMENTED':
-                default_value = 'NOT_IMPLEMENTED'
-            else:
-                default_value = default_value.text
-
-        self.default_value = default_value
-
-    def __str__(self, indent=''):
-        if PY3:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, bytes'
-            )
-        else:
-            output = TEMPLATE.format(
-                indent=indent,
-                name=self.__name__,
-                upnp_data_type=self.data_type_name,
-                py_data_type='str, unicode'
-            )
-
-        if self.default_value == 'NOT_IMPLEMENTED':
-            return output + indent + '    NOT_IMPLEMENTED' + '\n'
-
-        if self.default_value is not None:
-            output += indent + '    Default: ' + self.default_value + '\n'
-
-        if self.allowed_values is not None:
-
-            if self.direction == 'in':
-                output += indent + '    Allowed values:\n'
-            else:
-                output += indent + '    Possible returned values:\n'
-            for item in self.allowed_values:
-                output += indent + '        ' + item + '\n'
-
-        return output
-
-    @property
-    def as_dict(self):
-        res = dict(
-            name=self.__name__,
-            default_value=self.default_value,
-            data_type=str
-        )
-        if self.direction == 'in':
-            res['allowed_values'] = self.allowed_values
-        else:
-            res['returned_values'] = self.allowed_values
-
-        return res
-
-    def __call__(self, value):
-        if value is None:
-            if self.default_value is None:
-                if self.direction == 'in':
-                    raise ValueError('A value must be supplied')
-
-            else:
-                value = self.default_value
-
-        if self.direction == 'in':
-            if PY3:
-                if not isinstance(value, (str, bytes)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, bytes'
-                        'got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.decode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            else:
-                if not isinstance(value, (str, unicode)):
-                    raise TypeError(
-                        'Incorrect data type. Expected type str, unicode'
-                        ' got type {0}.'.format(type(value))
-                    )
-
-                try:
-                    value = value.encode('utf-8')
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    pass
-
-            if (
-                self.allowed_values is not None and
-                value not in self.allowed_values
-            ):
-                raise ValueError(
-                    'Value {0} not allowed. allowed values are \n{1}'.format(
-                        value,
-                        self.allowed_values
-                    )
-                )
-
-        elif value is not None:
-            if self.default_value == 'NOT_IMPLEMENTED':
-                value = self.default_value
 
         return value
 
 
 class Boolean(object):
-    py_data_type = bool
+    py_data_type = (bool,)
 
     def __init__(self, name, data_type_name, node, direction):
         self.__name__ = name
@@ -2115,14 +329,19 @@ class Boolean(object):
             indent=indent,
             name=self.__name__,
             upnp_data_type=self.data_type_name,
-            py_data_type='bool'
+            py_data_type=bool
         )
 
         if self.default_value == 'NOT_IMPLEMENTED':
             return output + indent + '    NOT_IMPLEMENTED' + '\n'
 
         if self.default_value is not None:
-            output += indent + '    Default: ' + repr(self.default_value) + '\n'
+            output += (
+                indent +
+                '    Default: ' +
+                repr(self.default_value) +
+                '\n'
+            )
 
         if self.direction == 'in':
             output += indent + '    Allowed values: True/False\n'
@@ -2136,7 +355,7 @@ class Boolean(object):
         res = dict(
             name=self.__name__,
             default_value=self.default_value,
-            data_type=bool
+            data_type=self.py_data_type
         )
         if self.direction == 'in':
             res['allowed_values'] = [False, True]
@@ -2171,6 +390,348 @@ class Boolean(object):
                 value = bool(self.allowed_values.index(value))
 
         return value
+
+
+class FloatBase(object):
+    py_data_type = (float,)
+    _label = ''
+
+    def __init__(self, name, data_type_name, node, direction):
+        self.__name__ = name
+        self.data_type_name = data_type_name
+        self.direction = direction
+        self.minimum = None
+        self.maximum = None
+        self.step = None
+
+        allowed_range = node.find('allowedValueRange')
+        if allowed_range is not None:
+            minimum = allowed_range.find('minimum')
+            maximum = allowed_range.find('maximum')
+            step = allowed_range.find('step')
+
+            if minimum is not None and minimum.text:
+                self.minimum = float(minimum.text)
+            if maximum is not None and maximum.text:
+                self.maximum = float(maximum.text)
+            if step is not None and step.text:
+                self.step = float(step.text)
+
+        default_value = node.find('defaultValue')
+        if default_value is not None:
+            if default_value.text == 'NOT_IMPLEMENTED':
+                default_value = 'NOT_IMPLEMENTED'
+            else:
+                default_value = float(default_value.text)
+
+        self.default_value = default_value
+
+    def __str__(self, indent=''):
+        output = TEMPLATE.format(
+            indent=indent,
+            name=self.__name__,
+            upnp_data_type=self.data_type_name,
+            py_data_type=self._label
+        )
+
+        if self.default_value == 'NOT_IMPLEMENTED':
+            return output + indent + '    NOT_IMPLEMENTED' + '\n'
+
+        if self.default_value is not None:
+            output += indent + '    Default: ' + repr(
+                self.default_value) + '\n'
+
+        if self.minimum is not None:
+            output += indent + '    Minimum: ' + repr(self.minimum) + '\n'
+
+        if self.maximum is not None:
+            output += indent + '    Maximum: ' + str(self.maximum) + '\n'
+
+        if self.step is not None:
+            output += indent + '    Step: ' + repr(self.step) + '\n'
+
+        return output
+
+    @property
+    def as_dict(self):
+        res = dict(
+            name=self.__name__,
+            default_value=self.default_value,
+            data_type=self.py_data_type,
+            min=self.minimum,
+            max=self.maximum,
+            step=self.step,
+        )
+        return res
+
+    def __call__(self, value):
+        if value is None:
+            if self.default_value is None:
+                if self.direction == 'in':
+                    raise ValueError('A value must be supplied')
+            else:
+                value = self.default_value
+
+        if self.direction == 'in':
+            if not isinstance(value, float):
+                raise ValueError('Value is not an ' + self._label)
+
+            if self.minimum is not None and value < self.minimum:
+                raise ValueError(
+                    'Value {0} is lower then the minimum of {1}'.format(
+                        value,
+                        self.minimum
+                    )
+                )
+
+            if self.maximum is not None and value > self.maximum:
+                raise ValueError(
+                    'Value {0} is higher then the maximum of {1}'.format(
+                        value,
+                        self.maximum
+                    )
+                )
+
+            if self.step is not None and value % self.step:
+                raise ValueError(
+                    'Value is not an increment of ' + str(self.step)
+                )
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                value = float(value)
+
+        return value
+
+
+class Fixed144(FloatBase):
+    _label = '8 byte float'
+
+    def __call__(self, value):
+        value = FloatBase.__call__(self, value)
+
+        if self.direction == 'in':
+            if (
+                value > 0 and
+                (
+                    value < 4.94065645841247E-324 or
+                    value > 1.79769313486232E308
+                )
+            ):
+                raise ValueError('Value is not an 8 byte float')
+
+            if (
+                value < 0 and
+                (
+                    value < -1.79769313486232E308 or
+                    value > -4.94065645841247E-324
+                )
+            ):
+                raise ValueError('Value is not an 8 byte float')
+
+            value = '{0:14.4f}'.format(value)
+
+        return value
+
+
+class Float(FloatBase):
+    _label = 'float'
+
+
+class R8(FloatBase):
+    _label = '8 byte float'
+
+    def __call__(self, value):
+        value = FloatBase.__call__(self, value)
+
+        if self.direction == 'in':
+            if (
+                value > 0 and
+                (
+                    value < 4.94065645841247E-324 or
+                    value > 1.79769313486232E308
+                )
+            ):
+                raise ValueError('Value is not an 8 byte float')
+
+            if (
+                value < 0 and
+                (
+                    value < -1.79769313486232E308 or
+                    value > -4.94065645841247E-324
+                )
+            ):
+                raise ValueError('Value is not an 8 byte float')
+
+            value = str(value)
+
+        return value
+
+
+class Number(R8):
+    pass
+
+
+class R4(FloatBase):
+    _label = '4 byte float'
+
+    def __call__(self, value):
+        value = FloatBase.__call__(self, value)
+
+        if self.direction == 'in':
+            if (
+                value < 3.40282347E+38 or
+                value > 1.17549435E-38
+            ):
+                raise ValueError('Value is not a 4 byte float')
+
+            value = str(value)
+
+        return value
+
+
+class Int(IntegerBase):
+    _label = 'int'
+
+
+class I8(IntegerBase):
+    _label = 'signed 64bit int'
+
+
+class I4(IntegerBase):
+    _label = 'signed 32bit int'
+    _min = -2147483648
+    _max = 2147483647
+
+
+class I2(IntegerBase):
+    _label = 'signed 16bit int'
+    _min = -32768
+    _max = 32767
+
+
+class I1(IntegerBase):
+    _label = 'signed 8bit int'
+    _min = -128
+    _max = 127
+
+
+class UI8(IntegerBase):
+    _label = 'unsigned 64bit int'
+    _min = 0
+    _max = 18446744073709551615
+
+
+class UI4(IntegerBase):
+    _label = 'unsigned 32bit int'
+    _min = 0
+    _max = 4294967295
+
+
+class UI2(IntegerBase):
+    _label = 'unsigned 16bit int'
+    _min = 0
+    _max = 65535
+
+
+class UI1(IntegerBase):
+    _label = 'unsigned 8bit int'
+    _min = 0
+    _max = 255
+
+
+class UUID(StringBase):
+    py_data_type = (str, unicode, uuid.UUID)
+
+    def __call__(self, value):
+        if isinstance(value, uuid.UUID):
+            value = str(value)[1:-1]
+
+        return StringBase.__call__(self, value)
+
+
+class BinBase64(StringBase):
+
+    def __call__(self, value):
+        value = StringBase.__call__(self, value)
+
+        if self.direction == 'in':
+            if PY3:
+                value = base64.encodebytes(value)
+            else:
+                value = base64.encodestring(value)
+
+        elif value is not None:
+            if self.default_value == 'NOT_IMPLEMENTED':
+                value = self.default_value
+            else:
+                if PY3:
+                    value = base64.decodebytes(value)
+                else:
+                    value = base64.decodestring(value)
+
+        return value
+
+
+class BinHex(StringBase):
+
+    def __call__(self, value):
+        if self.direction == 'in':
+            if isinstance(value, int):
+                value = hex(value)
+
+            value = StringBase.__call__(self, value)
+            value = value.replace('0X', '0x')
+
+            if not value.startswith('0x'):
+                raise ValueError('Value is not hex')
+
+        else:
+            value = StringBase.__call__(self, value)
+
+        return value
+
+
+class Char(StringBase):
+
+    def __call__(self, value):
+        value = StringBase.__call__(self, value)
+
+        if self.direction == 'in':
+            if len(value) != 1:
+                raise ValueError('Value is not a single character')
+
+        return value
+
+
+class String(StringBase):
+    pass
+
+
+class URI(StringBase):
+    pass
+
+
+class TimeTZ(StringBase):
+    pass
+
+
+class Time(StringBase):
+    pass
+
+
+class DateTimeTZ(StringBase):
+    pass
+
+
+class DateTime(StringBase):
+    pass
+
+
+class Date(StringBase):
+    pass
 
 
 TEMPLATE = '''
