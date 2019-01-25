@@ -34,7 +34,7 @@ class UPNPObject(object):
         for location in locations:
             parsed_url = urlparse(location)
 
-            url = parsed_url.scheme + '//' + parsed_url.netloc
+            url = parsed_url.scheme + '://' + parsed_url.netloc
             response = requests.get(location)
 
             if dump:
