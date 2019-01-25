@@ -190,6 +190,13 @@ def discover(timeout=5, log_level=None, search_ips=[], dump=''):
                 if packet['TYPE'] != 'response' or 'LOCATION' not in packet:
                     continue
 
+                if (
+                    packet['LOCATION'].count('/') == 2 and
+                    packet['LOCATION'].startswith('http')
+                ):
+
+                    continue
+
                 found[addr[0]].add(packet['LOCATION'])
 
         except socket.error:
