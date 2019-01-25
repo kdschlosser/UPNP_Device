@@ -82,14 +82,14 @@ class UPNPObject(object):
                 control_url = service.find('controlURL').text
                 if control_url is None:
                     if scpdurl.endswith('.xml'):
-                        control_url = scpdurl.split('/')[0]
+                        control_url = scpdurl.rsplit('/', 1)[0]
                         if control_url == scpdurl:
                             control_url = ''
                     else:
                         control_url = scpdurl
                 else:
                     control_url = control_url.text.replace(url, '')
-                
+
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
 
