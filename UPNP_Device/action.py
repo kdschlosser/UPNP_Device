@@ -8,6 +8,10 @@ try:
 except ImportError:
     from xmlns import ENVELOPE_XMLNS, strip_xmlns
 
+import logging
+
+logger = logging.getLogger('UPNP_Device')
+
 
 class Action(object):
 
@@ -76,6 +80,8 @@ class Action(object):
         doc.appendChild(envelope)
         pure_xml = doc.toxml()
 
+        logger.debug('OUTGOING: ' + pure_xml)
+
         header = {
             'SOAPAction':   '"{service}#{method}"'.format(
                 service=self.service,
@@ -88,7 +94,12 @@ class Action(object):
             data=pure_xml,
             headers=header
         )
-        envelope = etree.fromstring(response.content)
+
+        response = response.content.decode('utf-8')
+
+        logger.debug('INCOMING: ' + response)
+
+        envelope = etree.fromstring(response)
         envelope = strip_xmlns(envelope)
 
         body = envelope.find('Body')

@@ -303,6 +303,14 @@ class Boolean(object):
                 allowed_values = ['no', 'yes']
             elif 'Yes' in allowed_values:
                 allowed_values = ['No', 'Yes']
+            elif 'enable' in allowed_values:
+                allowed_values = ['disable', 'enable']
+            elif 'Enable' in allowed_values:
+                allowed_values = ['Disable', 'Enable']
+            elif 'on' in allowed_values:
+                allowed_values = ['off', 'on']
+            elif 'On' in allowed_values:
+                allowed_values = ['Off', 'On']
             elif 'true' in allowed_values:
                 allowed_values = ['false', 'true']
             elif 'True' in allowed_values:
@@ -318,7 +326,15 @@ class Boolean(object):
                 self.default_value = 'NOT_IMPLEMENTED'
             else:
                 default_value = default_value.text
-                if default_value in ('yes', 'Yes', 'true', 'True', '1'):
+                if default_value in (
+                    'yes',
+                    'Yes',
+                    'true',
+                    'True',
+                    '1',
+                    'enable',
+                    'Enable'
+                ):
                     default_value = True
                 else:
                     default_value = False

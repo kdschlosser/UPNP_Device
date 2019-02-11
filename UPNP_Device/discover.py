@@ -136,7 +136,15 @@ def discover(timeout=5, log_level=None, search_ips=(), dump=''):
         return sock
 
     def do(local_address, target_ips):
-        sock = send_to(local_address)
+        try:
+            sock = send_to(local_address)
+        except:
+            threads.remove(threading.current_thread())
+
+            if not threads:
+                found_event.set()
+
+            return
 
         for target_ip in target_ips:
             found[target_ip] = set()
@@ -187,7 +195,14 @@ def discover(timeout=5, log_level=None, search_ips=(), dump=''):
             found_event.set()
 
     def found_thread(ip_addr):
-        sock = send_to(ip_addr, timeout)
+        try:
+            sock = send_to(ip_addr, timeout)
+        except OSError:
+            threads.remove(threading.current_thread())
+
+            if not threads:
+                found_event.set()
+            return
 
         try:
             while True:

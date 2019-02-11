@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import six
 import requests
 import os
 from lxml import etree
@@ -22,62 +21,104 @@ except ImportError:
     from instance_singleton import InstanceSingleton
 
 
-@six.add_metaclass(InstanceSingleton)
 class UPNPObject(object):
 
     def __init__(self, ip, locations, dump=''):
         self.ip_address = ip
-
-        cls_name = None
-        self.__devices = {}
-        self.__services = {}
+        self._devices = {}
+        self._services = {}
         for location in locations:
-            parsed_url = urlparse(location)
-
-            url = parsed_url.scheme + '://' + parsed_url.netloc
+            parsed = urlparse(location)
+            url = '{0}://{1}:{2}/'.format(
+                parsed.scheme,
+                parsed.hostname,
+                parsed.port
+            )
             response = requests.get(location)
+            content = response.content.decode('utf-8')
+
+            path = parsed.path
+            if path.startswith('/'):
+                path = path[1:]
+
+            if '/' in path:
+                path, file_name = path.rsplit('/', 1)
+            else:
+                file_name = path
+                path = ''
+
+            if not file_name.endswith('.xml'):
+                file_name += '.xml'
 
             if dump:
-                path = location
-                if path.startswith('/'):
-                    path = path[1:]
+                if path:
+                    output_path = os.path.join(dump, path)
 
-                if '/' in path:
-                    path, file_name = path.rsplit('/', 1)
-                    path = os.path.join(dump, path)
+                    if not os.path.exists(output_path):
+                        os.makedirs(output_path)
                 else:
-                    file_name = path
-                    path = dump
+                    output_path = dump
 
-                if not os.path.exists(path):
-                    os.makedirs(path)
+                temp = ''.join(
+                    line.strip() for line in content.split('\n') if
+                    line.strip()
+                )
+                indent = ''
+                data = ''
+                output = []
 
-                if not file_name.endswith('.xml'):
-                    file_name += '.xml'
+                while temp:
+                    start = temp.find('<')
+                    if start != 0:
+                        data = temp[:start]
+                        temp = temp[start:]
+                    stop = temp.find('>')
 
-                if isinstance(response.content, bytes):
-                    content = response.content.decode('utf-8')
-                else:
-                    content = response.content
+                    node = temp[:stop + 1]
+                    temp = temp[stop + 1:]
 
-                with open(os.path.join(path, file_name), 'w') as f:
-                    f.write(content)
+                    if '<?' in node:
+                        output += [node]
+                    elif '/' in node and data:
+                        output[len(output) - 1] += data + node
+                        data = ''
+                        indent = indent[:-4]
+                    elif '/' in node:
+                        indent = indent[:-4]
+                        output += [indent + node]
+                    else:
+                        output += [indent + node]
+                        indent += '    '
 
-            root = etree.fromstring(response.content)
+                with open(os.path.join(output_path, file_name), 'w') as f:
+                    f.write('\n'.join(output))
+
+            try:
+                root = etree.fromstring(content)
+            except etree.XMLSyntaxError:
+                continue
+
             root = strip_xmlns(root)
-
             node = root.find('device')
-
-            services = node.find('serviceList')
-            if services is None:
+            if node is None:
                 services = []
-
-            devices = node.find('deviceList')
-            if devices is None:
                 devices = []
+
+            else:
+                services = node.find('serviceList')
+
+                if services is None:
+                    services = []
+
+                devices = node.find('deviceList')
+                if devices is None:
+                    devices = []
 
             for service in services:
                 scpdurl = service.find('SCPDURL').text.replace(url, '')
+
+                if '/' not in scpdurl and path and path not in scpdurl:
+                    scpdurl = path + '/' + scpdurl
 
                 control_url = service.find('controlURL').text
                 if control_url is None:
@@ -89,6 +130,9 @@ class UPNPObject(object):
                         control_url = scpdurl
                 else:
                     control_url = control_url.replace(url, '')
+
+                if control_url.startswith('/'):
+                    control_url = control_url[1:]
 
                 service_id = service.find('serviceId').text
                 service_type = service.find('serviceType').text
@@ -104,7 +148,7 @@ class UPNPObject(object):
                 )
                 name = service_id.split(':')[-1]
                 service.__name__ = name
-                self.__services[name] = service
+                self._services[name] = service
 
             for device in devices:
                 device = EmbeddedDevice(
@@ -113,24 +157,17 @@ class UPNPObject(object):
                     parent=self,
                     dump=dump
                 )
-                self.__devices[device.__name__] = device
-
-            if cls_name is None:
-                cls_name = node.find('modelName')
-                if cls_name is not None and cls_name.text:
-                    cls_name = cls_name.text.replace(' ', '_').replace('-', '')
-
-        self.__name__ = cls_name
+                self._devices[device.__name__] = device
 
     def __getattr__(self, item):
         if item in self.__dict__:
             return self.__dict__[item]
 
-        if item in self.__devices:
-            return self.__devices[item]
+        if item in self._devices:
+            return self._devices[item]
 
-        if item in self.__services:
-            return self.__services[item]
+        if item in self._services:
+            return self._services[item]
 
         if item in self.__class__.__dict__:
             if hasattr(self.__class__.__dict__[item], 'fget'):
@@ -152,11 +189,11 @@ class UPNPObject(object):
 
     @property
     def services(self):
-        return list(self.__services.values())[:]
+        return list(self._services.values())[:]
 
     @property
     def devices(self):
-        return list(self.__devices.values())[:]
+        return list(self._devices.values())[:]
 
     def __str__(self):
         output = '\n\n' + str(self.__name__) + '\n'
